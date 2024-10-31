@@ -1,9 +1,13 @@
+et-xmlfile==1.1.0
+ismrmrd==1.12.5
 nibabel==5.1.0
 numba==0.58.1
 numpy==1.23.2
+pandas==2.0.3
 Pillow==10.0.0
 pydicom==2.3.0
 pyinstaller==6.3.0
+pyMapVBVD==0.5.4
 PySimpleGUI==4.60.5
 python-dateutil==2.8.2
 python-git==2018.2.1
