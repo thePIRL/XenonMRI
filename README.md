@@ -10,6 +10,7 @@ This is code used by the University of Missouri PIRL (Pulmonary Imaging Research
 
 ## Overview of FlipCal
 This class will analyze data acquired from the spectroscopic calibration sequence (yes, I still call it a FlipCal, short for Flip Angle Calibration, even though it doesn't just calculate flip angles). It can input Twix files (Siemens raw data), MatLab files (MatLab workspace after processing data by Scott Robertson's code from the Duke pipeline), ISMRMRD files, or a previously processed FlipCal saved as a `pickle' in python. 
+![alt text](CalGUI.png)
 
 ## Overview of Vent_analysis
 There's 2 important pieces to this code. First, this contains the *Vent_Analysis* class which contains the processing pipeline for analyzing xenon ventilation data given the xenon image set (a DICOM file) and corresponding segmentation (a folder containing mask DICOMs). Second, the __main__ script employs the PySimpleGUI module to create a graphical user interface [GUI] so the data can be processed easily. Here's what the GUI looks like:
