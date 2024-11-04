@@ -866,7 +866,7 @@ if __name__ == "__main__":
                    [sg.Text('ISMRMRD Path'),sg.InputText(key='ISMRMRDpath',default_text='C:/PIRL/data/FlipCal.h5',size=(100,1)),sg.Button('Create ISMRMRD',key='ismrmrd')],
                    [sg.Text('Printout Path'),sg.InputText(key='PRINTOUTpath',default_text='C:/PIRL/data/FlipCal.png',size=(100,1)),sg.Button('Create Printout',key='printout')]]
     
-    window = sg.Window(f'PIRL FlipCal Analysis -- {version}', windowLayout, return_keyboard_events=True, margins=(0, 0), finalize=True, size= (1000,550))
+    window = sg.Window(f'PIRL FlipCal Analysis -- {version}', windowLayout, return_keyboard_events=True, margins=(0, 0), finalize=True, size= (1000,550),resizable=True)
     def draw_figure(canvas, figure):
         figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
         figure_canvas_agg.draw()
