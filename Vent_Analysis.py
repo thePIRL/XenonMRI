@@ -162,8 +162,10 @@ class Vent_Analysis:
 
         if pickle_dict is not None:
             self.unPickleMe(pickle_dict)
-        
-        self.metadata['LungVolume'] = np.sum(self.mask == 1)*np.prod(np.divide(self.vox,10))/1000
+        try:
+            self.metadata['LungVolume'] = np.sum(self.mask == 1)*np.prod(np.divide(self.vox,10))/1000
+        except Exception as e:
+            print(f"Error calculating Lung Volume in __init__(): {e}")
 
         
     def openSingleDICOM(self,dicom_path):        
@@ -241,7 +243,7 @@ class Vent_Analysis:
         self.metadata['SNR'] = self.calculate_SNR(self.HPvent,self.mask) ## -- SNR of xenon DICOM images, not Raw, nor N4
         self.N4HPvent = self.N4_bias_correction(self.HPvent,self.mask)
 
-        ## -- Mean-anchored Linear Binning [Thomen et al. 2015 Radiology] -- ##
+        ## -- 60% Mean-anchored [Thomen et al. 2015 Radiology] -- ##
         signal_list = sorted(self.N4HPvent[self.mask>0])
         mean_normalized_vent = np.divide(self.N4HPvent,np.mean(signal_list))
         self.defectArray = np.zeros(mean_normalized_vent.shape)
@@ -252,13 +254,30 @@ class Vent_Analysis:
         self.metadata['DefectVolume'] = np.sum(self.defectArray == 1)*np.prod(np.divide(self.vox,10))/1000
 
         ## -- Linear Binning [Mu He, 2016] -- ##
+        _95th_percentile_signal_value = signal_list[int(len(signal_list)*.99)]
         norm95th_vent = np.divide(self.N4HPvent,signal_list[int(len(signal_list)*.99)])
         self.defectArrayLB = ((norm95th_vent<=0.16)*1 + (norm95th_vent>0.16)*(norm95th_vent<=0.34)*2 + (norm95th_vent>0.34)*(norm95th_vent<=0.52)*3 + (norm95th_vent>0.52)*(norm95th_vent<=0.7)*4 + (norm95th_vent>0.7)*(norm95th_vent<=0.88)*5 + (norm95th_vent>0.88)*6)*self.mask
-        self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1 + (self.defectArrayLB == 2)*1)/np.sum(self.mask)
+        self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1)/np.sum(self.mask)
 
-        ## -- K-Means [Kirby, 2012] -- ##
-        # k = KMeans(signal_list)
-        # k.fit(np.array(signal_list).reshape(-1,1))
+        ## -- K-Means [Miranda Kirby, 2012] -- ##
+        xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)
+        KM = KMeans(n_clusters=4, random_state=42)
+        labels = KM.fit_predict(xenon_flattened) # perform 4-cluster kMeans on all xenon signal
+        cluster_means = [np.mean(xenon_flattened[labels == 0]),np.mean(xenon_flattened[labels == 1]),np.mean(xenon_flattened[labels == 2]),np.mean(xenon_flattened[labels == 3])]
+        lowest_cluster = np.argsort(cluster_means)[0] # Which of the 4 clusters has the lowest signal?
+        low_xenon = xenon_flattened[labels == lowest_cluster] # make a vector of all low xenon signal
+        low_xenon_threshold = np.max(low_xenon) # What is the signal threshold to define hypoventilation
+        low_labels = KM.fit_predict(low_xenon) # Do 4-cluster kMeans again on the low cluster (ala Kirby 2013)
+        low_cluster_means = [np.mean(low_xenon[low_labels == 0]),np.mean(low_xenon[low_labels == 1]),np.mean(low_xenon[low_labels == 2]),np.mean(low_xenon[low_labels == 3])]
+        secondlowest_cluster = np.argsort(low_cluster_means)[1]
+        defect_xenon_threshold = np.max(low_xenon[low_labels == secondlowest_cluster])
+        self.defectArrayKM = (1*(self.N4HPvent<low_xenon_threshold) + 1*(self.N4HPvent<defect_xenon_threshold))*self.mask
+        self.metadata['VDP_km'] = 100*np.sum((self.defectArrayKM >0)*1)/np.sum(self.mask)
+
+        mean_signal = np.mean(self.N4HPvent[self.mask>0])
+        self.defect_thresholds = [thresh, _95th_percentile_signal_value*0.16/mean_signal, low_xenon_threshold/mean_signal]
+
+
         
         print('\033[32mcalculate_VDP ran successfully\033[37m')
 
