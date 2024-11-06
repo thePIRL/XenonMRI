@@ -257,7 +257,7 @@ class Vent_Analysis:
         _95th_percentile_signal_value = signal_list[int(len(signal_list)*.99)]
         norm95th_vent = np.divide(self.N4HPvent,signal_list[int(len(signal_list)*.99)])
         self.defectArrayLB = ((norm95th_vent<=0.16)*1 + (norm95th_vent>0.16)*(norm95th_vent<=0.34)*2 + (norm95th_vent>0.34)*(norm95th_vent<=0.52)*3 + (norm95th_vent>0.52)*(norm95th_vent<=0.7)*4 + (norm95th_vent>0.7)*(norm95th_vent<=0.88)*5 + (norm95th_vent>0.88)*6)*self.mask
-        self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1)/np.sum(self.mask)
+        self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1 + (self.defectArrayLB == 2)*1)/np.sum(self.mask)
 
         ## -- K-Means [Miranda Kirby, 2012] -- ##
         xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)
@@ -275,7 +275,7 @@ class Vent_Analysis:
         self.metadata['VDP_km'] = 100*np.sum((self.defectArrayKM >0)*1)/np.sum(self.mask)
 
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
-        self.defect_thresholds = [thresh, _95th_percentile_signal_value*0.16/mean_signal, low_xenon_threshold/mean_signal]
+        self.defect_thresholds = [thresh, _95th_percentile_signal_value*0.34/mean_signal, low_xenon_threshold/mean_signal]
 
 
         
