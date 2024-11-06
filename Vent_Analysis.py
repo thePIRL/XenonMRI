@@ -517,24 +517,30 @@ class Vent_Analysis:
 
         image = Image.fromarray(np.uint8(IMAGE*255))  # Convert the numpy array to a PIL image
         draw = ImageDraw.Draw(image)
-        for k in ss:
-            draw.text((k*N4.shape[1] - N4.shape[1]/2,N4.shape[0]*1.8),f"{k+1}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 30))
-        draw.text((10,N4.shape[0]*0.10), f"Patient: {self.metadata['PatientName']} ({self.metadata['PatientAge']}/{self.metadata['PatientSex']})",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 40))
-        draw.text((10,N4.shape[0]*0.40), f"Disease: {self.metadata['Disease']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((10,N4.shape[0]*0.70), f"StudyDate: {self.metadata['StudyDate']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((10,N4.shape[0]*1.00), f"Visit#: {self.metadata['visit']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((10,N4.shape[0]*1.30), f"Treatment: {self.metadata['treatment']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((np.round(IMAGE.shape[1]*.25),N4.shape[0]*0.10), f"Lung Volume: {np.round(self.metadata['LungVolume']*1000)} mL",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((np.round(IMAGE.shape[1]*.25),N4.shape[0]*0.40), f"Defect Volume: {np.round(self.metadata['DefectVolume']*1000)} mL",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*0.10), f"DE: {self.metadata['DE']} mL",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*0.40), f"FEV1: {self.metadata['FEV1']} %",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*0.70), f"VDP: {np.round(self.metadata['VDP'], 1)} %",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+        try:
+            for k in ss:
+                draw.text((k*N4.shape[1] - N4.shape[1]/2,N4.shape[0]*1.8),f"{k+1}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 30))
+            draw.text((10,N4.shape[0]*0.10), f"Patient: {self.metadata['PatientName']} ({self.metadata['PatientAge']}/{self.metadata['PatientSex']})",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 40))
+            draw.text((10,N4.shape[0]*0.40), f"Disease: {self.metadata['Disease']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((10,N4.shape[0]*0.70), f"StudyDate: {self.metadata['StudyDate']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((10,N4.shape[0]*1.00), f"Visit#: {self.metadata['visit']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((10,N4.shape[0]*1.30), f"Treatment: {self.metadata['treatment']}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((np.round(IMAGE.shape[1]*.25),N4.shape[0]*0.10), f"Lung Volume: {np.round(self.metadata['LungVolume']*1000)} mL",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((np.round(IMAGE.shape[1]*.25),N4.shape[0]*0.40), f"Defect Volume: {np.round(self.metadata['DefectVolume']*1000)} mL",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*0.10), f"DE: {self.metadata['DE']} mL",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*0.40), f"FEV1: {self.metadata['FEV1']} %",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*0.70), f"VDP: {np.round(self.metadata['VDP'], 1)} %",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+        except:
+            pass
         try:
             draw.text((np.round(IMAGE.shape[1]*.50),N4.shape[0]*1.00), f"CI: {np.round(self.metadata['CI'])} %",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
         except:
             pass
-        draw.text((np.round(IMAGE.shape[1]*.75),N4.shape[0]*0.25), f'Analysis Version: {self.version}',fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
-        draw.text((np.round(IMAGE.shape[1]*.75),N4.shape[0]*0.50), f"Analyzed by: {self.metadata['analysisUser']} on {str(datetime.datetime.today()).split()[0]}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+        try:
+            draw.text((np.round(IMAGE.shape[1]*.75),N4.shape[0]*0.25), f'Analysis Version: {self.version}',fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+            draw.text((np.round(IMAGE.shape[1]*.75),N4.shape[0]*0.50), f"Analyzed by: {self.metadata['analysisUser']} on {str(datetime.datetime.today()).split()[0]}",fill = (255,255,255), font = ImageFont.truetype('arial.ttf',size = 35))
+        except:
+            pass
         image.save(path, 'PNG')  # Save the image
         print(f'\033[32mScreenshot saved to {path}\033[37m')
 
@@ -620,14 +626,15 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 
 
 
-# ## -- Test Code -- ##
-# DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
-# MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
-# PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
-# Vent1 = Vent_Analysis(DICOM_path,MASK_path,PROTON_path)
-# Vent1.calculate_VDP()
-# #Vent1.calculate_CI()
-# Vent1.screenShot()
+## -- Test Code -- ##
+DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
+MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
+PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
+Vent1 = Vent_Analysis(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl")
+Vent1.screenShot("//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl.png")
+Vent1.calculate_VDP()
+#Vent1.calculate_CI()
+Vent1.screenShot()
 
 
 ### ------------------------------------------------------------------------------------------------ ###
