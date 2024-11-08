@@ -154,8 +154,7 @@ class Vent_Analysis:
         if pickle_path is not None:
             print(f'\033[34mPickle path provided: {pickle_path}. Loading...\033[37m')
             try:
-                with open(pickle_path, 'rb') as file:
-                    pickle_dict = pickle.load(file)
+                self.unPickleMe(pickle_path)
                 print(f'\033[32mPickle file successfully loaded.\033[37m')
             except:
                 print('\033[31mOpening Pickle from path and building arrays failed...\033[37m')
@@ -576,14 +575,23 @@ class Vent_Analysis:
         with open(pickle_path, 'wb') as file:
             pickle.dump(pickle_dict, file)
         print(f'\033[32mPickled dictionary saved to {pickle_path}\033[37m')
-
-
-    def unPickleMe(self,pickle_dict):
-        '''Given a pickled dictionary (yep, I actually named a variable pickle_dict), it will extract entries to class attributes'''
-        for attr, value in pickle_dict.items():
-            setattr(self, attr, value)
-
-
+    
+    def unPickleMe(self, pickle_path):
+        '''Loads a pickled dictionary from file, then extracts entries to class attributes, ignoring pydicom objects'''
+        try:
+            # Open and load the pickle file
+            with open(pickle_path, 'rb') as file:
+                pickle_dict = pickle.load(file)
+            # Set attributes, skipping pydicom objects
+            for attr, value in pickle_dict.items():
+                if isinstance(value, (dicom.dataset.Dataset, dicom.sequence.Sequence)):
+                    print(f"\033[31mSkipping pydicom object for attribute: {attr}\033[37m")
+                    continue
+                setattr(self, attr, value)
+            print(f'\033[32mAttributes successfully loaded from {pickle_path}\033[37m')
+        except:
+            print('piss')
+    
     def __repr__(self):
         string = (f'\033[35mVent_Analysis\033[37m class object version \033[94m{self.version}\033[37m\n')
         for attr, value in vars(self).items():
@@ -630,11 +638,13 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
 MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
 PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
-Vent1 = Vent_Analysis(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl")
+Vent1 = Vent_Analysis(pickle_path="C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl")
 Vent1.screenShot("//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl.png")
 Vent1.calculate_VDP()
 #Vent1.calculate_CI()
 Vent1.screenShot()
+with open("C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl", 'rb') as file:
+    A = pickle.load(file)
 
 
 ### ------------------------------------------------------------------------------------------------ ###
