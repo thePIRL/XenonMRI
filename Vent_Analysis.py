@@ -634,17 +634,17 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 
 
 
-## -- Test Code -- ##
-DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
-MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
-PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
-Vent1 = Vent_Analysis(pickle_path="C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl")
-Vent1.screenShot("//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl.png")
-Vent1.calculate_VDP()
-#Vent1.calculate_CI()
-Vent1.screenShot()
-with open("C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl", 'rb') as file:
-    A = pickle.load(file)
+# ## -- Test Code -- ##
+# DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
+# MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
+# PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
+# Vent1 = Vent_Analysis(pickle_path="C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl")
+# Vent1.screenShot("//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl.png")
+# Vent1.calculate_VDP()
+# #Vent1.calculate_CI()
+# Vent1.screenShot()
+# with open("C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl", 'rb') as file:
+#     A = pickle.load(file)
 
 
 ### ------------------------------------------------------------------------------------------------ ###
