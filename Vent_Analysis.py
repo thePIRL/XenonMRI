@@ -64,7 +64,8 @@ class Vent_Analysis:
                  pickle_dict = None,
                  pickle_path = None):
         
-        self.version = '241007_vent'
+        self.version = '241112_vent'
+        # 241112 - fixed the missing pickle loader
         # 241007 - updated screenshot and unpickling methods
         self.proton = ''
         self.N4HPvent = ''
@@ -103,7 +104,7 @@ class Vent_Analysis:
                         }
 
 
-        ## -- Was the xenon array provided or a path to its DICOM? -- ##
+        ## ------- XENON DICOM or path ------- ##
         if xenon_array is not None:
             print(f'\033[34mXenon array provided: {xenon_array.shape}\033[37m')
             self.HPvent = xenon_array
@@ -121,7 +122,7 @@ class Vent_Analysis:
             except:
                 print('\033[31mPulling Xenon DICOM Header failed...\033[37m')
 
-        ## -- Was the mask array provided or a path to its DICOM folder? -- ##
+        ## ------- MASK DICOM FOLDER or path ------- ##
         if mask_array is not None:
             print(f'\033[34mMask array provided: {mask_array.shape}\033[37m')
             self.mask = mask_array
@@ -136,7 +137,7 @@ class Vent_Analysis:
                 print('\033[31mLoading Mask and calculating border failed...\033[37m')
 
 
-        ## -- Was a proton array provided or a path to its DICOM? -- ##
+        ## ------- PROTON DICOM or path ------- ##
         if proton_array is not None: 
             print(f'\033[34mProton array provided: {proton_array.shape}\033[37m')
             self.proton = proton_array
@@ -149,22 +150,20 @@ class Vent_Analysis:
                 except:
                     print('\033[31mOpening Proton DICOM failed...\033[37m')
 
-
-        ## -- Was a pickle or a pickle path provided? -- ##
+        ## ------- PICKLE LOAD ------- ##
         if pickle_path is not None:
             print(f'\033[34mPickle path provided: {pickle_path}. Loading...\033[37m')
             try:
-                self.unPickleMe(pickle_path)
-                print(f'\033[32mPickle file successfully loaded.\033[37m')
+                with open(pickle_path, 'rb') as file:
+                    pickle_dict = pickle.load(file)
             except:
-                print('\033[31mOpening Pickle from path and building arrays failed...\033[37m')
-
+                print('\033[31mCould not open Pickle file\033[37m')
         if pickle_dict is not None:
             self.unPickleMe(pickle_dict)
         try:
             self.metadata['LungVolume'] = np.sum(self.mask == 1)*np.prod(np.divide(self.vox,10))/1000
         except Exception as e:
-            print(f"Error calculating Lung Volume in __init__(): {e}")
+            print(f"Error calculating Lung Volume in __init__() method, probly no vox attribute?: {e}")
 
         
     def openSingleDICOM(self,dicom_path):        
@@ -481,12 +480,16 @@ class Vent_Analysis:
             else:
                 return (x - np.min(x)) / (np.max(x) - np.min(x))
         # Load parula colorscale for CI images
-        parula = np.load('C:\PIRL\data\parula.np.npy')
+        parula = np.load('parula.npy')
         _, rr,cc,ss = self.cropToData(self.mask,border=5)
 
         # - create the arrays to display from cropped indices
         blank = np.zeros_like(self.HPvent[np.ix_(rr,cc,ss)])
-        proton = normalize(self.proton[np.ix_(rr,cc,ss)])
+        try:
+            proton = normalize(self.proton[np.ix_(rr,cc,ss)])
+        except:
+            print('No proton array found')
+            proton = blank
         HP = normalize(self.HPvent[np.ix_(rr,cc,ss)])
         N4 = normalize(self.N4HPvent[np.ix_(rr,cc,ss)])
         border = normalize(self.mask_border[np.ix_(rr,cc,ss)])>0
@@ -576,21 +579,13 @@ class Vent_Analysis:
             pickle.dump(pickle_dict, file)
         print(f'\033[32mPickled dictionary saved to {pickle_path}\033[37m')
     
-    def unPickleMe(self, pickle_path):
-        '''Loads a pickled dictionary from file, then extracts entries to class attributes, ignoring pydicom objects'''
-        try:
-            # Open and load the pickle file
-            with open(pickle_path, 'rb') as file:
-                pickle_dict = pickle.load(file)
-            # Set attributes, skipping pydicom objects
-            for attr, value in pickle_dict.items():
-                if isinstance(value, (dicom.dataset.Dataset, dicom.sequence.Sequence)):
-                    print(f"\033[31mSkipping pydicom object for attribute: {attr}\033[37m")
-                    continue
+    def unPickleMe(self,pickle_dict):
+        '''Given a pickled dictionary (yep, I actually named a variable pickle_dict), it will extract entries to class attributes'''
+        for attr, value in pickle_dict.items():
+            try:
                 setattr(self, attr, value)
-            print(f'\033[32mAttributes successfully loaded from {pickle_path}\033[37m')
-        except:
-            print('piss')
+            except:
+                pass
     
     def __repr__(self):
         string = (f'\033[35mVent_Analysis\033[37m class object version \033[94m{self.version}\033[37m\n')
@@ -638,13 +633,36 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 # DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
 # MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
 # PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
-# Vent1 = Vent_Analysis(pickle_path="C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl")
-# Vent1.screenShot("//umh.edu/data/Radiology/Xenon_Studies/Gaby/240425_CI/240405_VDP_analysis/240519CiPkls/Mepo0014_221031_visit1_preAlb.pkl.pkl.png")
+# Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
 # Vent1.calculate_VDP()
-# #Vent1.calculate_CI()
-# Vent1.screenShot()
-# with open("C:\PIRL\data\ATS2025 data\Mepo0018_230123_visit3_preAlb.pkl", 'rb') as file:
-#     A = pickle.load(file)
+
+EXPORT_path = 'C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_testing/'
+if not os.path.isdir(EXPORT_path):
+    os.makedirs(EXPORT_path)
+
+# Vent1.ds = ''
+# Vent1.proton_ds = ''
+# Vent1.exportNifti(EXPORT_path,'nifti.nii')
+# Vent1.dicom_to_json(Vent1.ds, json_path=os.path.join(EXPORT_path,f'json.json'))
+# Vent1.pickleMe(pickle_path=os.path.join(EXPORT_path,f'pkl.pkl'))
+# Vent1.screenShot(path=os.path.join(EXPORT_path,f'png.png'))
+# Vent1.exportDICOM(Vent1.ds,EXPORT_path,optional_text='testing',forPACS=True)
+
+
+files = os.listdir('C:/PIRL/data/VentPickles')
+files.append('pkl.pkl')
+for file in files:
+    print(f'Trying File {file}')
+    try:
+        Vent2 = Vent_Analysis(pickle_path=os.path.join('c:/pirl/data/VentPickles/',file))
+        print(Vent2)
+    except Exception as e:
+        print(e)
+
+
+# # import pickletools
+# # with open(pickle_path, 'rb') as file:
+# #     A = pickletools.dis(file)
 
 
 ### ------------------------------------------------------------------------------------------------ ###
@@ -652,7 +670,7 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 ### ------------------------------------------------------------------------------------------------ ###
 
 if __name__ == "__main__":
-    version = '241007'
+    version = '241112_VentAnalysisGUI'
     image_box_size = 50
     ARCHIVE_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/Archive/'
     
@@ -801,8 +819,7 @@ if __name__ == "__main__":
                 CIMontage = array3D_to_montage2D(Vent1.CIarray)
                 CIMontageImage = arrayToImage(colorBinary(N4Montage, CIMontage), (int(image_box_size * N4Montage.shape[1] / N4Montage.shape[0]), image_box_size))
                 window['-CIIMAGE-'].update(data=CIMontageImage)
-            except Exception as e:
-                print(f"Error updating CI image: {e}")
+            except:
                 window['-CIIMAGE-'].update(data=arrayToImage(np.zeros((3, 3)), (1000, image_box_size)))
 
 
@@ -1033,6 +1050,7 @@ if __name__ == "__main__":
             if not os.path.isdir(EXPORT_path):
                 os.makedirs(EXPORT_path)
             try:
+                Vent1.metadata['analysisUser'] = user
                 Vent1.metadata['fileName'] = fileName
                 Vent1.metadata['DE'] = values['DE']
                 Vent1.metadata['FEV1'] = values['FEV1']
