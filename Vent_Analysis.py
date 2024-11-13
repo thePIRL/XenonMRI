@@ -64,7 +64,8 @@ class Vent_Analysis:
                  pickle_dict = None,
                  pickle_path = None):
         
-        self.version = '241112_vent'
+        self.version = '241113_vent'
+        # 241113 - exportNumpys() added, pickle issues fixed, metadata saves pydicom objects as strings now
         # 241112 - fixed the missing pickle loader
         # 241007 - updated screenshot and unpickling methods
         self.proton = ''
@@ -704,7 +705,7 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 ### ------------------------------------------------------------------------------------------------ ###
 
 if __name__ == "__main__":
-    version = '241112_VentAnalysisGUI'
+    version = '241113_VentAnalysisGUI'
     image_box_size = 50
     ARCHIVE_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/Archive/'
     
