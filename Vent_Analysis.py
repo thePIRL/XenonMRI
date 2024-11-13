@@ -201,6 +201,8 @@ class Vent_Analysis:
         for elem in infoList:
             try:
                 self.metadata[elem] = self.ds[elem].value
+                if 'pydicom' in str(type(self.metadata[elem])):
+                    self.metadata[elem] = str(self.metadata[elem])
             except:
                 print(f'\033[31mNo {elem}\033[37m')
                 self.metadata[elem] = ''
@@ -395,6 +397,40 @@ class Vent_Analysis:
             json.dump(dicom_dict, json_file, indent=4)
         print(f"\033[32mJson file saved to {json_path}\033[37m")
 
+    def exportNumpys(self,parent_folder = 'c:/pirl/data/'):
+        export_path = os.path.join(parent_folder,f'numpys')
+        if not os.path.isdir(export_path):
+            os.makedirs(export_path)
+        try:
+            np.save(os.path.join(export_path,'1_HPvent'),self.HPvent)
+        except:
+            print(f'\033[33mCould not export HPvent to numpy\033[37m')
+        try:
+            np.save(os.path.join(export_path,'0_proton'),self.proton)
+        except:
+            print(f'\033[33mCould not export proton to numpy\033[37m')
+        try:
+            np.save(os.path.join(export_path,'2_mask'),self.mask)
+        except:
+            print(f'\033[33mCould not export mask to numpy\033[37m')
+        try:
+            np.save(os.path.join(export_path,'3_N4HPvent'),self.N4HPvent)
+        except:
+            print(f'\033[33mCould not export N4HPvent to numpy\033[37m')
+        try:
+            np.save(os.path.join(export_path,'4_defectArray'),self.defectArray)
+        except:
+            print(f'\033[33mCould not export defectArray to numpy\033[37m')
+        try:
+            np.save(os.path.join(export_path,'5_CIarray'),self.CIarray)
+        except:
+            print(f'\033[33mCould not export CIarray to numpy\033[37m')
+        try:
+            with open(os.path.join(export_path,'metadata.json'), 'w') as json_file:
+                json.dump(self.metadata, json_file, indent=4)
+        except:
+            print(f'\033[33mCould not export metadata json file to numpy\033[37m')
+    
     def exportDICOM(self,ds,save_dir = 'C:/PIRL/data/',optional_text = '',forPACS=True):
         '''Create and saves the Ventilation images with defectArray overlayed
         Note: Our PACS doesn't seem to like the export of 3D data as a single DICOM...'''
@@ -570,6 +606,9 @@ class Vent_Analysis:
         '''Uses dictionary comprehension to create a dictionary of all class attributes, then saves as pickle'''
         pickle_dict = {}
         for attr in vars(self):
+            if 'pydicom' in str(type(attr)):
+                print(f'omitting {attr} from pickle')
+                continue
             try:
                 pickle.dumps(getattr(self, attr))
                 pickle_dict[attr] = getattr(self, attr)
@@ -629,40 +668,35 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 
 
 
-# ## -- Test Code -- ##
+# # ## -- Test Code -- ##
 # DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
 # MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
 # PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
 # Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
 # Vent1.calculate_VDP()
 
-EXPORT_path = 'C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_testing/'
-if not os.path.isdir(EXPORT_path):
-    os.makedirs(EXPORT_path)
+# # EXPORT_path = 'C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_testing/'
+# # if not os.path.isdir(EXPORT_path):
+# #     os.makedirs(EXPORT_path)
 
-# Vent1.ds = ''
-# Vent1.proton_ds = ''
+# EXPORT_path = 'C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_testing/'
 # Vent1.exportNifti(EXPORT_path,'nifti.nii')
 # Vent1.dicom_to_json(Vent1.ds, json_path=os.path.join(EXPORT_path,f'json.json'))
 # Vent1.pickleMe(pickle_path=os.path.join(EXPORT_path,f'pkl.pkl'))
 # Vent1.screenShot(path=os.path.join(EXPORT_path,f'png.png'))
 # Vent1.exportDICOM(Vent1.ds,EXPORT_path,optional_text='testing',forPACS=True)
 
+# # for attr, value in Vent1.metadata.items():
+# #     print(f'{attr} is a {type(value)}')
 
-files = os.listdir('C:/PIRL/data/VentPickles')
-files.append('pkl.pkl')
-for file in files:
-    print(f'Trying File {file}')
-    try:
-        Vent2 = Vent_Analysis(pickle_path=os.path.join('c:/pirl/data/VentPickles/',file))
-        print(Vent2)
-    except Exception as e:
-        print(e)
+# Vent2 = Vent_Analysis(pickle_path=os.path.join(EXPORT_path,f'pkl.pkl'))
+# Vent2.exportDICOM(Vent1.ds,EXPORT_path,optional_text='testing',forPACS=True)
+# Vent2.exportNumpys('C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241113')
 
+# Vent3 = Vent_Analysis(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/General_Xenon/Gen_Xenon_Studies/Xe-0078 - 240213 - pnemonia_lung toxicity_partial lobectomy/Xe-0078_240208_preAlb.pkl")
 
-# # import pickletools
-# # with open(pickle_path, 'rb') as file:
-# #     A = pickletools.dis(file)
+# with open('C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241113/numpys/metadata.json', 'w') as json_file:
+#     json.dump(Vent2.metadata, json_file, indent=4)
 
 
 ### ------------------------------------------------------------------------------------------------ ###
@@ -1062,6 +1096,7 @@ if __name__ == "__main__":
                 print('\033[31mError adding GUI data to class metadata...\033[37m')
 
             #Export Nifti Arrays, DICOM header json, Class pickle, and screenshot
+            Vent1.exportNumpys(EXPORT_path)
             Vent1.exportNifti(EXPORT_path,fileName)
             Vent1.dicom_to_json(Vent1.ds, json_path=os.path.join(EXPORT_path,f'{fileName}.json'))
             Vent1.pickleMe(pickle_path=os.path.join(EXPORT_path,f'{fileName}.pkl'))
