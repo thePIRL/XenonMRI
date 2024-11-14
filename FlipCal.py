@@ -808,19 +808,23 @@ class FlipCal:
                         string += (f'   \033[31m {attr2}: \033[37m\n')
                     else:
                         string += (f'   \033[32m {attr2}: \033[36m{value2} \033[37m\n')
-            #elif type(value) is dict:
+            elif type(value) is dict:
+                string += (f'\033[35m{attr} also found\033[37m \n')
             else:
                 string += (f'\033[32m {attr}: \033[36m{value} \033[37m\n')
         return string
 
 ## -- playground -- ##
 FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
-# FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
+FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
 
-# FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
-# FA2.process()
-# FA2.fit_all_DP_FIDs()
-# FA2.calibration_dict
+FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
+
+FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
+FA3
+plt.plot(FA3.RO_fit_params[1,0,:])
+plt.plot(FA3.RO_fit_params[0,0,:])
+plt.show()
 ## -- /playground -- ##
 
 ### --------------------------------------------------------------------------------------------####
