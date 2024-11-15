@@ -8,11 +8,12 @@ from scipy.optimize import differential_evolution # for fitting the DP FID - fit
 import concurrent.futures # ----------------------- for faster wiggles processing - fit_all_DP_FIDs()
 import time # ------------------------------------- for calculating process times - fit_all_DP_FIDs()
 from tqdm import tqdm # --------------------------- for console build - fit_all_DP_FIDs()
-from datetime import date # ----------------------- So we can export the analysis date - __init__()
+import datetime # --------------------------------- for analysis timestamps and dicom creation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # GUI stuff - printout()
 import ismrmrd # ---------------------------------- For importing/exporting ISMRMRD formats - exportISMRMRD() and parseISMRMRD()
 import json # ------------------------------------- For exporting Twix Header
 import xml.etree.ElementTree as ET # -------------- To parse ISMRMRD header - parseISMRMRD()
+import pydicom as dicom # ---------------------------------- For saving plots as dicoms - 
 
 class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
@@ -45,7 +46,8 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '241030_calibration' 
+        self.version = '241115_calibration' 
+        # -- 241115, Now saves plots as dicoms
         # -- 241030, ISMRMRD format now included
         # -- 241025, metadata updated to scanParameters and patientInfo
         # -- 241009, version numbers should contain the sequence type (cal here)
@@ -53,7 +55,7 @@ class FlipCal:
         # -- 240925, amp is 2x hilber modulus
         # -- 240924, Fixed TE90 issue and twix_dict is now just header so it can be pickled
         # -- 240918, First full version
-        self.processDate = date.today().strftime("%y%m%d")
+        self.processDate = datetime.date.today().strftime("%y%m%d")
         self.sequence = 'Calibration'
         # -- input data to be cast to attributes -- ##
         self.twix = '' # ---------- Note that the twix object itself cannot be pickled, but the entire header can
@@ -186,6 +188,7 @@ class FlipCal:
             self.calcWiggleAmp()
         except:
             print('RBC2MEM not not in attributes. Need to run fit_all_DP_FIDs() method to get wiggles.')
+        self.processDate = datetime.date.today().strftime("%y%m%d")
     
     def parseTwix(self):
         '''Fetches some of our favorite parameters from the twix object header.
@@ -372,7 +375,7 @@ class FlipCal:
             self.newVoltage = self.scanParameters['referenceVoltage']*self.scanParameters['FlipAngle']/self.flip_angle
             print(f"\033[36m...So you should change your reference voltage from \033[32m{np.round(self.scanParameters['referenceVoltage'],1)} \033[36mto \033[32m{np.round(self.newVoltage,1)}\033[37m")
         except:
-            print(f"\033[36m---reference voltage is not in scanParameters\033[37m")
+            print(f"\033[36m---Either referenceVoltage or FlipAngle is not in scanParameters\033[37m")
     
     def fit_DP_FID(self,FID=None,printResult = True):
         '''Give it a DP FID, and it will fit to the 3-resonance-decay model and 
@@ -682,6 +685,65 @@ class FlipCal:
         plt.savefig(save_path)
         print(f"\033[36mPrintout saved to \033[33m{save_path}\033[37m")
     
+    def dicomPrintout(self):
+        # -- First we create the plot to be dicomized -- #
+        fig, axa = plt.subplots(figsize = (6,4))
+        axa.set_title('Gas Decay')
+        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
+        xdata = np.arange(1, len(self.gasDecay) + 1)
+        axa.plot(xdata, gasDecay_fit_function(xdata, *self.flipAngleFitParams), 'r', label='Fit')
+        axa.plot(xdata, self.gasDecay, 'bo', markerfacecolor='b', label='Acquired')
+        axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
+        axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
+        fig.canvas.draw()
+        image_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        image_data = image_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # -- 
+        fig, axa = plt.subplots(figsize = (6,4))
+        axa.set_title('')
+        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
+        xdata = np.arange(1, len(self.gasDecay) + 1)
+        axa.plot(xdata, gasDecay_fit_function(xdata, *self.flipAngleFitParams), 'r', label='Fit')
+        axa.plot(xdata, self.gasDecay, 'bo', markerfacecolor='b', label='Acquired')
+        axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
+        axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
+        fig.canvas.draw()
+        image_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        image_data = image_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # - Create and save a dicom - #
+        file_meta = dicom.dataset.FileMetaDataset()
+        file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
+        file_meta.MediaStorageSOPInstanceUID = dicom.uid.generate_uid()
+        file_meta.ImplementationClassUID = dicom.uid.generate_uid()
+        ds = dicom.dataset.FileDataset("output.dcm", {}, file_meta=file_meta, preamble=b"\0" * 128)
+        ds.PatientName = self.patientInfo['PatientName']
+        ds.PatientID = self.patientInfo['PatientID']
+        ds.StudyInstanceUID = dicom.uid.generate_uid()
+        ds.SeriesInstanceUID = dicom.uid.generate_uid()
+        ds.SOPInstanceUID = dicom.uid.generate_uid()
+        ds.Modality = "MR"
+        ds.StudyDate = datetime.datetime.now().strftime("%Y%m%d")
+        ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
+        ds.Manufacturer = self.scanParameters['systemVendor']
+        # Image data specifics for RGB
+        ds.Rows, ds.Columns, _ = image_data.shape
+        ds.SamplesPerPixel = 3  # RGB
+        ds.PhotometricInterpretation = "RGB"
+        ds.PlanarConfiguration = 0  # 0: RGBRGB... (interleaved), 1: RRR...GGG...BBB...
+        ds.BitsAllocated = 8  # 8 bits per channel
+        ds.BitsStored = 8
+        ds.HighBit = 7
+        ds.PixelRepresentation = 0  # Unsigned integer
+        ds.PixelData = image_data.tobytes()
+        # Save to file
+        ds.save_as("c:/pirl/data/dicomoutput.dcm")
+    
     def pickleMe(self, pickle_path='C:/PIRL/data/FlipCalPickle.pkl'):
         '''Uses dictionary comprehension to create a dictionary of all class attributes, then saves as pickle'''
         pickle_dict = {}
@@ -814,18 +876,34 @@ class FlipCal:
                 string += (f'\033[32m {attr}: \033[36m{value} \033[37m\n')
         return string
 
-## -- playground -- ##
-FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
-FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
 
-FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
+
+# ## -- playground -- ##
+# FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
+# FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
+
+# FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
 
 FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
-FA3
-plt.plot(FA3.RO_fit_params[1,0,:])
-plt.plot(FA3.RO_fit_params[0,0,:])
-plt.show()
+FA3.dicomPrintout()
+
+# PIlist = ['PatientName','PatientID','PatientAge','PatientSex','PatientDOB','PatientWeight','IRB','FEV1','FVC','LCI','6MWT','DE','129XeEnrichment']
+# SPlist = ['ProtocolName','systemVendor','institutionName','B0fieldStrength','FlipAngle','DisFrequencyOffset','referenceAmplitude','TE','TR','GasFrequency','nFIDs','nPts','scanDate','scanTime','referenceVoltage','dwellTime','FieldStrength','FOV','nSkip']
+
+# for attr, value in FA3.metadata.items():
+#     if attr in 
+#     print(f"{attr} is {value}")
+
+# plt.plot(FA3.RO_fit_params[1,0,:])
+# plt.plot(FA3.RO_fit_params[0,0,:])
+# plt.show()
+
+
+
 ## -- /playground -- ##
+
+
+
 
 ### --------------------------------------------------------------------------------------------####
 ### -----------------------------------------Main GUI Script -----------------------------------####
