@@ -720,15 +720,13 @@ class FlipCal:
         axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"Pants: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
         axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
         fig.canvas.draw()
-        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        data1 = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        data1 = data1.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close(fig)
         try:
-            image_data[1,:,:,:] = data
-            plt.imshow(data)
-            plt.show()
+            image_data = np.stack((data,data1),axis=0)
         except:
             print(f"shape image_data = {image_data.shape}, shape data = {data.shape}")
-        plt.close(fig)
         # - Create and save a dicom - #
         file_meta = dicom.dataset.FileMetaDataset()
         file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
