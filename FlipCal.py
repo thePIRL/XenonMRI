@@ -686,7 +686,8 @@ class FlipCal:
         print(f"\033[36mPrintout saved to \033[33m{save_path}\033[37m")
     
     def dicomPrintout(self):
-        # -- First we create the plot to be dicomized -- #
+        # -- First we create the plots to be dicomized -- #
+        # Gas Decay and Flip Angle
         fig, axa = plt.subplots(figsize = (6,4))
         axa.set_title('Gas Decay')
         gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
@@ -699,9 +700,14 @@ class FlipCal:
         axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
         axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
         fig.canvas.draw()
-        image_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        image_data = image_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-        # -- 
+        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        image_data = np.zeros((2,data.shape[0],data.shape[1],data.shape[2]))
+        image_data[0,:,:,:] = data
+        plt.close(fig)
+        plt.imshow(data)
+        plt.show()
+        # -- DP FID -- #
         fig, axa = plt.subplots(figsize = (6,4))
         axa.set_title('')
         gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
@@ -711,11 +717,18 @@ class FlipCal:
         axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
         axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
         axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"Pants: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
         axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
         fig.canvas.draw()
-        image_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        image_data = image_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        try:
+            image_data[1,:,:,:] = data
+            plt.imshow(data)
+            plt.show()
+        except:
+            print(f"shape image_data = {image_data.shape}, shape data = {data.shape}")
+        plt.close(fig)
         # - Create and save a dicom - #
         file_meta = dicom.dataset.FileMetaDataset()
         file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
@@ -732,7 +745,8 @@ class FlipCal:
         ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
         ds.Manufacturer = self.scanParameters['systemVendor']
         # Image data specifics for RGB
-        ds.Rows, ds.Columns, _ = image_data.shape
+        _, ds.Rows, ds.Columns, _ = image_data.shape
+        ds.NumberOfFrames = 2
         ds.SamplesPerPixel = 3  # RGB
         ds.PhotometricInterpretation = "RGB"
         ds.PlanarConfiguration = 0  # 0: RGBRGB... (interleaved), 1: RRR...GGG...BBB...
@@ -743,6 +757,7 @@ class FlipCal:
         ds.PixelData = image_data.tobytes()
         # Save to file
         ds.save_as("c:/pirl/data/dicomoutput.dcm")
+        return image_data
     
     def pickleMe(self, pickle_path='C:/PIRL/data/FlipCalPickle.pkl'):
         '''Uses dictionary comprehension to create a dictionary of all class attributes, then saves as pickle'''
@@ -885,7 +900,10 @@ class FlipCal:
 # FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
 
 FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
-FA3.dicomPrintout()
+A = FA3.dicomPrintout()
+A.shape
+plt.imshow(A[0,:,:,:])
+plt.show()
 
 # PIlist = ['PatientName','PatientID','PatientAge','PatientSex','PatientDOB','PatientWeight','IRB','FEV1','FVC','LCI','6MWT','DE','129XeEnrichment']
 # SPlist = ['ProtocolName','systemVendor','institutionName','B0fieldStrength','FlipAngle','DisFrequencyOffset','referenceAmplitude','TE','TR','GasFrequency','nFIDs','nPts','scanDate','scanTime','referenceVoltage','dwellTime','FieldStrength','FOV','nSkip']

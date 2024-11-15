@@ -19,7 +19,6 @@ import mapvbvd # -------------------------- for process_Raw
 from sklearn.cluster import KMeans # ---------- for kMeans VDP
 import matplotlib.pyplot as plt
 
-
 #------------------------------------------------------------------------------------
 # ----------- VENTILATION ANALYSIS CLASS DEFINITION ---------------------------------
 #------------------------------------------------------------------------------------
