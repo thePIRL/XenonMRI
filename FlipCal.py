@@ -688,7 +688,8 @@ class FlipCal:
     def dicomPrintout(self):
         # -- First we create the plots to be dicomized -- #
         # Gas Decay and Flip Angle
-        fig, axa = plt.subplots(figsize = (6,4))
+        fig_size = (7,4)
+        fig, axa = plt.subplots(figsize = fig_size)
         axa.set_title('Gas Decay')
         gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
         xdata = np.arange(1, len(self.gasDecay) + 1)
@@ -705,26 +706,67 @@ class FlipCal:
         image_data = np.zeros((2,data.shape[0],data.shape[1],data.shape[2]))
         image_data[0,:,:,:] = data
         plt.close(fig)
-        plt.imshow(data)
-        plt.show()
         # -- DP FID -- #
-        fig, axa = plt.subplots(figsize = (6,4))
-        axa.set_title('')
-        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
-        xdata = np.arange(1, len(self.gasDecay) + 1)
-        axa.plot(xdata, gasDecay_fit_function(xdata, *self.flipAngleFitParams), 'r', label='Fit')
-        axa.plot(xdata, self.gasDecay, 'bo', markerfacecolor='b', label='Acquired')
-        axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"Pants: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
-        axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
+        fig, axe = plt.subplots(figsize = fig_size)
+        axe.set_title('DP Fits Spectra')
+        w = np.linspace(-0.5,0.5,len(self.t))/self.scanParameters['dwellTime']
+        RBC = self.FIDFitfunction(self.t,*self.DP_fit_params[0,:])
+        MEM = self.FIDFitfunction(self.t,*self.DP_fit_params[1,:])
+        GAS = self.FIDFitfunction(self.t,*self.DP_fit_params[2,:])
+        FRBC = np.fft.fftshift(np.fft.fft(RBC))
+        FMEM = np.fft.fftshift(np.fft.fft(MEM))
+        FGAS = np.fft.fftshift(np.fft.fft(GAS))
+        scalor = np.max(np.concatenate((abs(FGAS),abs(FMEM),abs(FRBC))))
+        axe.vlines(x=self.DP_fit_params[0,1],ymin=0,ymax=scalor,linewidth=0.5,color=(1,.3,.3),linestyle='dashed')
+        axe.vlines(x=self.DP_fit_params[1,1],ymin=0,ymax=scalor,linewidth=0.5,color=(.3,1,.3),linestyle='dashed')
+        axe.vlines(x=self.DP_fit_params[2,1],ymin=0,ymax=scalor,linewidth=0.5,color=(.3,.3,1),linestyle='dashed')
+        axe.plot(w,abs(FRBC),c=(0.8,0,0))
+        axe.plot(w,abs(FMEM),c=(0,0.8,0))
+        axe.plot(w,abs(FGAS),c=(0,0,0.8))
+        axe.set_xlim([-10000,3000])
+        axe.set_xlabel('frequency [Hz]')
+        axe.text(-10000,0.90*scalor,f"  ɷ = ",fontsize=9,fontweight='bold')
+        axe.text(-10000,0.80*scalor,f"  ɸ = ",fontsize=9,fontweight='bold')
+        axe.text(-10000,0.70*scalor,f"  L = ",fontsize=9,fontweight='bold')
+        axe.text(-10000,0.60*scalor,f"  G = ",fontsize=9,fontweight='bold')
+        axe.text(-9000,0.90*scalor,f"{np.round(self.DP_fit_params[2,1])} [Hz]",fontsize=9,color=(0,0,0.5),fontweight='bold')
+        axe.text(-9000,0.80*scalor,f"{np.round(self.DP_fit_params[2,2])}°",fontsize=9,color=(0,0,0.5),fontweight='bold')
+        axe.text(-9000,0.70*scalor,f"{np.round(self.DP_fit_params[2,3])} [Hz]",fontsize=9,color=(0,0,0.5),fontweight='bold')
+        axe.text(-9000,0.60*scalor,f"{np.round(self.DP_fit_params[2,4])} [Hz]",fontsize=9,color=(0,0,0.5),fontweight='bold')
+        axe.text(-6000,0.90*scalor,f"{np.round(self.DP_fit_params[1,1])} [Hz] ({np.round(   1e6*(self.DP_fit_params[1,1] - self.DP_fit_params[2,1])/self.newGasFrequency,2)})",fontsize=9,color=(0,0.5,0),fontweight='bold')        
+        axe.text(-6000,0.80*scalor,f"{np.round(self.DP_fit_params[1,2])}°",fontsize=9,color=(0,0.5,0),fontweight='bold')
+        axe.text(-6000,0.70*scalor,f"{np.round(self.DP_fit_params[1,3])} [Hz]",fontsize=9,color=(0,0.5,0),fontweight='bold')
+        axe.text(-6000,0.60*scalor,f"{np.round(self.DP_fit_params[1,4])} [Hz]",fontsize=9,color=(0,0.5,0),fontweight='bold')
+        axe.text(-500,0.90*scalor,f"{np.round(self.DP_fit_params[0,1])} [Hz] ({np.round(   1e6*(self.DP_fit_params[0,1] - self.DP_fit_params[2,1])/self.newGasFrequency,2)})",fontsize=9,color=(0.5,0,0),fontweight='bold')
+        axe.text(-500,0.80*scalor,f"{np.round(self.DP_fit_params[0,2])}°",fontsize=9,color=(0.5,0,0),fontweight='bold')
+        axe.text(-500,0.70*scalor,f"{np.round(self.DP_fit_params[0,3])} [Hz]",fontsize=9,color=(0.5,0,0),fontweight='bold')
+        axe.text(-500,0.60*scalor,f"{np.round(self.DP_fit_params[0,4])} [Hz]",fontsize=9,color=(0.5,0,0),fontweight='bold')
+        axe.text(-6000,0.4*scalor,f"TE90 = {np.round(self.TE90,3)} [ms]",fontsize=9,fontweight='bold')
         fig.canvas.draw()
         data1 = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         data1 = data1.reshape(fig.canvas.get_width_height()[::-1] + (3,))
         plt.close(fig)
+        # - Wiggles - #
         try:
-            image_data = np.stack((data,data1),axis=0)
+            fig, axb = plt.subplots(figsize = fig_size)
+            axb.set_title('Wiggles')
+            axb.hlines(y=np.arange(0,1,0.1),xmin=np.repeat(0,10),xmax=np.repeat(10,10),color = (0.8,0.8,0.8),linestyle='dashed',linewidth=0.5)
+            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEM[100:])), self.RBC2MEM[100:])
+            axb.set_ylim([0,1])
+            axb.set_xlim([100*int(self.scanParameters['TR'])*1e-6,len(self.RBC2MEM)*int(self.scanParameters['TR'])*1e-6])
+            axb.set_title(f"RBC/MEM vs Time")
+            axb.text(2,0.9,f"RBC/MEM mean = {np.round(np.mean(self.RBC2MEM[100:]),3)}",fontsize=12)
+            axb.text(2,0.82,f"RBC/MEM amp = {np.round(self.RBC2MEMamp,3)} = {np.round(200*self.RBC2MEMamp/np.mean(self.RBC2MEM[100:]),2)} %",fontsize=12)
+        except:
+            print(f"No Wiggles to print")
+            axb = fig.add_subplot(gs[2:4, 6:8])
+            axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
+        fig.canvas.draw()
+        data2 = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        data2 = data2.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # -- Build Array -- ##
+        try:
+            image_data = np.stack((data,data1,data2),axis=0)
         except:
             print(f"shape image_data = {image_data.shape}, shape data = {data.shape}")
         # - Create and save a dicom - #
@@ -743,8 +785,7 @@ class FlipCal:
         ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
         ds.Manufacturer = self.scanParameters['systemVendor']
         # Image data specifics for RGB
-        _, ds.Rows, ds.Columns, _ = image_data.shape
-        ds.NumberOfFrames = 2
+        ds.NumberOfFrames, ds.Rows, ds.Columns, _ = image_data.shape
         ds.SamplesPerPixel = 3  # RGB
         ds.PhotometricInterpretation = "RGB"
         ds.PlanarConfiguration = 0  # 0: RGBRGB... (interleaved), 1: RRR...GGG...BBB...
@@ -899,9 +940,8 @@ class FlipCal:
 
 FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
 A = FA3.dicomPrintout()
-A.shape
-plt.imshow(A[0,:,:,:])
-plt.show()
+
+
 
 # PIlist = ['PatientName','PatientID','PatientAge','PatientSex','PatientDOB','PatientWeight','IRB','FEV1','FVC','LCI','6MWT','DE','129XeEnrichment']
 # SPlist = ['ProtocolName','systemVendor','institutionName','B0fieldStrength','FlipAngle','DisFrequencyOffset','referenceAmplitude','TE','TR','GasFrequency','nFIDs','nPts','scanDate','scanTime','referenceVoltage','dwellTime','FieldStrength','FOV','nSkip']
