@@ -508,8 +508,73 @@ class FlipCal:
         ax6.text(1000,0.1*np.max(abs(F)),f"  G = {np.round(self.gas_fit_params[4],0)} [Hz]",fontsize=9)
         ax6.set_xlabel('frequency [Hz]')
 
+    def draw_DP_phasor(self,axc):
+        TE = int(self.scanParameters['TE'])*1e-6
+        RBC_n0 = self.FIDFitfunction(0, *self.DP_fit_params[0,:])
+        MEM_n0 = self.FIDFitfunction(0, *self.DP_fit_params[1,:])
+        GAS_n0 = self.FIDFitfunction(0, *self.DP_fit_params[2,:])
+        RBC_nTE = self.FIDFitfunction(-TE, *self.DP_fit_params[0,:])
+        MEM_nTE = self.FIDFitfunction(-TE, *self.DP_fit_params[1,:])
+        GAS_nTE = self.FIDFitfunction(-TE, *self.DP_fit_params[2,:])
+        axc.set_title(f"DP _nTE (t=-{self.scanParameters['TE']})")
+        axc.plot([0,1],[0,1],c=(1,1,1))
+        axc.vlines(x = [0],ymin=[-1],ymax=[1], color = (0.3,0.5,0.8),linestyle='dashed')
+        axc.hlines(y = [0],xmin=[-1],xmax=[1], color = (0.3,0.5,0.8),linestyle='dashed')
+        axc.arrow(0,0,RBC_nTE.real/abs(MEM_nTE),RBC_nTE.imag/abs(MEM_nTE),color=(0.8,0,0),head_width=0.05, head_length=0.1,linewidth=2)
+        axc.arrow(0,0,MEM_nTE.real/abs(MEM_nTE),MEM_nTE.imag/abs(MEM_nTE),color=(0,0.8,0),head_width=0.05, head_length=0.1,linewidth=2)
+        axc.arrow(0,0,GAS_nTE.real/abs(MEM_nTE),GAS_nTE.imag/abs(MEM_nTE),color=(0,0,0.8),head_width=0.05, head_length=0.1,linewidth=2)
+        axc.set_ylim([-1,1])
+        axc.set_xlim([-1,1])
+        axc.set_axis_off()
+
+    def draw_DP_FID(self,ax8):
+        T = np.linspace(-int(self.scanParameters['TE']),0.01,1000)
+        RBC_t = self.FIDFitfunction(T,*self.DP_fit_params[0,:])
+        MEM_t = self.FIDFitfunction(T,*self.DP_fit_params[1,:])
+        GAS_t = self.FIDFitfunction(T,*self.DP_fit_params[2,:])
+        TOT_t = RBC_t + MEM_t + GAS_t
+        ax8.set_title('DP FID')
+        ax8.hlines(y=0,xmin=0,xmax=self.t[-1]*1000,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
+        ax8.vlines(x=0,ymin=-0.6,ymax=0.6,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
+        ax8.plot(self.t*1000,self.DPfid.real,c=(0,0.7,0))
+        ax8.plot(self.t*1000,self.DPfid.imag,c=(0.4,0,0.7))
+        #ax8.plot(T*1000,abs(TOT_t),c=(0,0,0),linestyle='dashed')
+        ax8.plot(T*1000,TOT_t.real,c=(0,0.7,0),linestyle='dashed',linewidth=0.5)
+        ax8.plot(T*1000,TOT_t.imag,c=(0.4,0,0.7),linestyle='dashed',linewidth=0.5)
+        ax8.set_xlim([-0.43,7])
+        ax8.set_ylim([-np.max(abs(self.DPfid)),np.max(abs(self.DPfid))])
+        ax8.set_xlabel('time [ms]')
+    
+    def draw_DP_FID_Fit(self,axd):
+        axd.set_title('DP FID Fits')
+        T = np.linspace(-0.43e-3,10e-3,1000)
+        RBC = self.FIDFitfunction(T,*self.DP_fit_params[0,:])
+        MEM = self.FIDFitfunction(T,*self.DP_fit_params[1,:])
+        GAS = self.FIDFitfunction(T,*self.DP_fit_params[2,:])
+        axd.plot(T*1000,RBC.imag,c=(0.8,0,0),linestyle='dashed',linewidth=0.7)
+        axd.plot(T*1000,MEM.imag,c=(0,0.8,0),linestyle='dashed',linewidth=0.7)
+        axd.plot(T*1000,GAS.imag,c=(0,0,0.8),linestyle='dashed',linewidth=0.7)
+        axd.plot(T*1000,RBC.real,c=(0.8,0,0))
+        axd.plot(T*1000,MEM.real,c=(0,0.8,0))
+        axd.plot(T*1000,GAS.real,c=(0,0,0.8))
+        axd.hlines(y=0,xmin=0,xmax=self.t[-1]*1000,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
+        axd.vlines(x=0,ymin=-0.6,ymax=0.6,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
+        axd.set_xlim([-0.43,7])
+        axd.set_ylim([-np.max(abs(MEM)),np.max(abs(MEM))])
+        axd.set_xlabel('time [ms]')
+
+    def draw_DP_spectrum(self,ax9):
+        ax9.set_title('DP spectrum')
+        w = np.linspace(-0.5,0.5,len(self.DPfid))/self.scanParameters['dwellTime']
+        F = np.fft.fftshift(np.fft.fft(self.DPfid))
+        ax9.plot(w,abs(F),c=(0,0,0))
+        ax9.plot(w,F.real,c=(0,0.7,0))
+        ax9.plot(w,F.imag,c=(0.4,0,0.7))
+        ax9.set_xlim([-10000,3000])
+        ax9.set_xlabel('frequency [Hz]')
+
     def draw_DP_spectra_fit(self,axe):
-        axe.set_title('DP Fits Spectra')
+        axe.set_title('DP Spectra Fits')
         w = np.linspace(-0.5,0.5,len(self.t))/self.scanParameters['dwellTime']
         RBC = self.FIDFitfunction(self.t,*self.DP_fit_params[0,:])
         MEM = self.FIDFitfunction(self.t,*self.DP_fit_params[1,:])
@@ -543,6 +608,18 @@ class FlipCal:
         axe.text(-500,0.70*scalor,f"{np.round(self.DP_fit_params[0,3])} [Hz]",fontsize=9,color=(0.5,0,0),fontweight='bold')
         axe.text(-500,0.60*scalor,f"{np.round(self.DP_fit_params[0,4])} [Hz]",fontsize=9,color=(0.5,0,0),fontweight='bold')
         axe.text(-6000,0.4*scalor,f"TE90 = {np.round(self.TE90,3)} [ms]",fontsize=9,fontweight='bold')
+
+    def draw_GAS_decay(self,axa):
+        axa.set_title('Gas Decay')
+        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
+        xdata = np.arange(1, len(self.gasDecay) + 1)
+        axa.plot(xdata, gasDecay_fit_function(xdata, *self.flipAngleFitParams), 'r', label='Fit')
+        axa.plot(xdata, self.gasDecay, 'bo', markerfacecolor='b', label='Acquired')
+        axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
+        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
+        axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
 
     def draw_wiggles(self,axb):
         try:
@@ -613,81 +690,23 @@ class FlipCal:
         ax7.set_xlim([-1,1])
         ax7.set_axis_off()
         ## ------- DP FID (FID) -------#
-        T = np.linspace(-TE,0.01,1000)
-        RBC_t = self.FIDFitfunction(T,*self.DP_fit_params[0,:])
-        MEM_t = self.FIDFitfunction(T,*self.DP_fit_params[1,:])
-        GAS_t = self.FIDFitfunction(T,*self.DP_fit_params[2,:])
-        TOT_t = RBC_t + MEM_t + GAS_t
         ax8 = fig.add_subplot(gs[2, 1:3])
-        ax8.set_title('DP FID')
-        ax8.hlines(y=0,xmin=0,xmax=self.t[-1]*1000,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
-        ax8.vlines(x=0,ymin=-0.6,ymax=0.6,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
-        ax8.plot(self.t*1000,self.DPfid.real,c=(0,0.7,0))
-        ax8.plot(self.t*1000,self.DPfid.imag,c=(0.4,0,0.7))
-        #ax8.plot(T*1000,abs(TOT_t),c=(0,0,0),linestyle='dashed')
-        ax8.plot(T*1000,TOT_t.real,c=(0,0.7,0),linestyle='dashed',linewidth=0.5)
-        ax8.plot(T*1000,TOT_t.imag,c=(0.4,0,0.7),linestyle='dashed',linewidth=0.5)
-        ax8.set_xlim([-0.43,7])
-        ax8.set_ylim([-np.max(abs(self.DPfid)),np.max(abs(self.DPfid))])
-        ax8.set_xlabel('time [ms]')
+        self.draw_DP_FID(ax8)
         ## ------- DP FID (spectrum) -------#
         ax9 = fig.add_subplot(gs[2, 3:6])
-        ax9.set_title('DP spectrum')
-        w = np.linspace(-0.5,0.5,len(self.DPfid))/self.scanParameters['dwellTime']
-        F = np.fft.fftshift(np.fft.fft(self.DPfid))
-        ax9.plot(w,abs(F),c=(0,0,0))
-        ax9.plot(w,F.real,c=(0,0.7,0))
-        ax9.plot(w,F.imag,c=(0.4,0,0.7))
-        ax9.set_xlim([-10000,3000])
-        ax9.set_xlabel('frequency [Hz]')
+        self.draw_DP_spectrum(ax9)
         ## ------- DP FITS (phasor)-------#
         axc = fig.add_subplot(gs[3, 0])
-        axc.set_title(f"DP _nTE (t=-{self.scanParameters['TE']})")
-        axc.plot([0,1],[0,1],c=(1,1,1))
-        axc.vlines(x = [0],ymin=[-1],ymax=[1], color = (0.3,0.5,0.8),linestyle='dashed')
-        axc.hlines(y = [0],xmin=[-1],xmax=[1], color = (0.3,0.5,0.8),linestyle='dashed')
-        axc.arrow(0,0,RBC_nTE.real/abs(MEM_nTE),RBC_nTE.imag/abs(MEM_nTE),color=(0.8,0,0),head_width=0.05, head_length=0.1,linewidth=2)
-        axc.arrow(0,0,MEM_nTE.real/abs(MEM_nTE),MEM_nTE.imag/abs(MEM_nTE),color=(0,0.8,0),head_width=0.05, head_length=0.1,linewidth=2)
-        axc.arrow(0,0,GAS_nTE.real/abs(MEM_nTE),GAS_nTE.imag/abs(MEM_nTE),color=(0,0,0.8),head_width=0.05, head_length=0.1,linewidth=2)
-        #axc.arrow(0,0,RBC_0.real/abs(MEM_0),RBC_0.imag/abs(MEM_0),color=(0.8,0,0),head_width=0.05, head_length=0.1,linewidth=2)
-        #axc.arrow(0,0,MEM_0.real/abs(MEM_0),MEM_0.imag/abs(MEM_0),color=(0,0.8,0),head_width=0.05, head_length=0.1,linewidth=2)
-        #axc.arrow(0,0,GAS_0.real/abs(MEM_0),GAS_0.imag/abs(MEM_0),color=(0,0,0.8),head_width=0.05, head_length=0.1,linewidth=2)
-        axc.set_ylim([-1,1])
-        axc.set_xlim([-1,1])
-        axc.set_axis_off()
+        self.draw_DP_phasor(axc)
         ## ------- DP FITS FID-------#
         axd = fig.add_subplot(gs[3, 1:3])
-        axd.set_title('DP FID Fits')
-        T = np.linspace(-0.43e-3,10e-3,1000)
-        RBC = self.FIDFitfunction(T,*self.DP_fit_params[0,:])
-        MEM = self.FIDFitfunction(T,*self.DP_fit_params[1,:])
-        GAS = self.FIDFitfunction(T,*self.DP_fit_params[2,:])
-        axd.plot(T*1000,RBC.imag,c=(0.8,0,0),linestyle='dashed',linewidth=0.7)
-        axd.plot(T*1000,MEM.imag,c=(0,0.8,0),linestyle='dashed',linewidth=0.7)
-        axd.plot(T*1000,GAS.imag,c=(0,0,0.8),linestyle='dashed',linewidth=0.7)
-        axd.plot(T*1000,RBC.real,c=(0.8,0,0))
-        axd.plot(T*1000,MEM.real,c=(0,0.8,0))
-        axd.plot(T*1000,GAS.real,c=(0,0,0.8))
-        axd.hlines(y=0,xmin=0,xmax=self.t[-1]*1000,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
-        axd.vlines(x=0,ymin=-0.6,ymax=0.6,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
-        axd.set_xlim([-0.43,7])
-        axd.set_ylim([-np.max(abs(MEM)),np.max(abs(MEM))])
-        axd.set_xlabel('time [ms]')
+        self.draw_DP_FID_Fit(axd)
         ## ------- DP FITS Spectra -------#
         axe = fig.add_subplot(gs[3, 3:6])
         self.draw_DP_spectra_fit(axe)
-        ### ----- Flip Angle Fit ------ ###
+        ### ----- Gas Decay and Flip Angle Fit ------ ###
         axa = fig.add_subplot(gs[0:2, 6:8])
-        axa.set_title('Gas Decay')
-        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
-        xdata = np.arange(1, len(self.gasDecay) + 1)
-        axa.plot(xdata, gasDecay_fit_function(xdata, *self.flipAngleFitParams), 'r', label='Fit')
-        axa.plot(xdata, self.gasDecay, 'bo', markerfacecolor='b', label='Acquired')
-        axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
-        axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
+        self.draw_GAS_decay(axa)
         ### ----- Wiggles ------ ###
         axb = fig.add_subplot(gs[2:4, 6:8])
         self.draw_wiggles(axb)
@@ -700,63 +719,66 @@ class FlipCal:
         plt.savefig(save_path)
         print(f"\033[36mPrintout saved to \033[33m{save_path}\033[37m")
     
-    def dicomPrintout(self):
+    def dicomPrintout(self,save_path = 'c:/pirl/data/dicomoutput.dcm'):
         # -- First we create the plots to be dicomized -- #
-        # Gas Decay and Flip Angle
+        # -- 1 - Gas Decay and Flip Angle
         fig_size = (7,4)
         fig, axa = plt.subplots(figsize = fig_size)
-        axa.set_title('Gas Decay')
-        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
-        xdata = np.arange(1, len(self.gasDecay) + 1)
-        axa.plot(xdata, gasDecay_fit_function(xdata, *self.flipAngleFitParams), 'r', label='Fit')
-        axa.plot(xdata, self.gasDecay, 'bo', markerfacecolor='b', label='Acquired')
-        axa.text(np.max(xdata)*0.2,np.max(self.gasDecay)*1.0,f"New Gas Frequency: {np.round(self.newGasFrequency)} [Hz]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.95,f"Calculated FA: {np.round(self.flip_angle,1)}°±{np.round(self.flip_err,1)}°",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
-        axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
-        axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
+        self.draw_GAS_decay(axa)
         fig.canvas.draw()
-        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-        # image_data = np.zeros((2,data.shape[0],data.shape[1],data.shape[2]))
-        # image_data[0,:,:,:] = data
+        GAS_Decay_Fit = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        GAS_Decay_Fit = GAS_Decay_Fit.reshape(fig.canvas.get_width_height()[::-1] + (3,))
         plt.close(fig)
-        # -- GAS FID -- #
+        # -- 2 -GAS FID -- #
         fig, ax5 = plt.subplots(figsize = fig_size)
         self.draw_GAS_FID(ax5)
         fig.canvas.draw()
         GAS_FID_fig = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         GAS_FID_fig = GAS_FID_fig.reshape(fig.canvas.get_width_height()[::-1] + (3,))
         plt.close(fig)
-        # -- GAS SPECTRUM -- #
+        # -- 3 -GAS SPECTRUM -- #
         fig, ax5 = plt.subplots(figsize = fig_size)
         self.draw_GAS_spectrum(ax5)
         fig.canvas.draw()
         GAS_SPECTRUM_fig = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         GAS_SPECTRUM_fig = GAS_SPECTRUM_fig.reshape(fig.canvas.get_width_height()[::-1] + (3,))
         plt.close(fig)
-        # -- DP FID -- #
+        # -- 4 -DP FID Fit -- #
+        fig, axe = plt.subplots(figsize = fig_size)
+        self.draw_DP_FID(axe)
+        fig.canvas.draw()
+        DP_FID = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        DP_FID = DP_FID.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close(fig)
+        # -- 5 -DP FID Fit -- #
+        fig, axe = plt.subplots(figsize = fig_size)
+        self.draw_DP_FID_Fit(axe)
+        fig.canvas.draw()
+        DP_FID_FIT = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        DP_FID_FIT = DP_FID_FIT.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close(fig)
+        # -- 6 -DP Spectra Fit-- #
         fig, axe = plt.subplots(figsize = fig_size)
         self.draw_DP_spectra_fit(axe)
         fig.canvas.draw()
         DP_SPECTRA_FIT = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         DP_SPECTRA_FIT = DP_SPECTRA_FIT.reshape(fig.canvas.get_width_height()[::-1] + (3,))
         plt.close(fig)
-        # - Wiggles - #
+        # - 7 -Wiggles - #
         fig, axb = plt.subplots(figsize = fig_size)
         try:
             self.draw_wiggles(axb) 
         except:
-            print(f"No Wiggles to print")
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
         fig.canvas.draw()
-        data2 = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data2 = data2.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        WIGGLES = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        WIGGLES = WIGGLES.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close(fig)
         # -- Build Array -- ##
         try:
-            image_data = np.stack((data,GAS_FID_fig,GAS_SPECTRUM_fig,DP_SPECTRA_FIT,data2),axis=0)
+            image_data = np.stack((GAS_Decay_Fit,GAS_FID_fig,GAS_SPECTRUM_fig,DP_FID,DP_FID_FIT,DP_SPECTRA_FIT,WIGGLES),axis=0)
         except:
-            print(f"shape image_data = {image_data.shape}, shape data = {data.shape}")
+            print(f"Array Shapes don't match for DICOM export for some reason...")
         # - Create and save a dicom - #
         file_meta = dicom.dataset.FileMetaDataset()
         file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
@@ -783,8 +805,7 @@ class FlipCal:
         ds.PixelRepresentation = 0  # Unsigned integer
         ds.PixelData = image_data.tobytes()
         # Save to file
-        ds.save_as("c:/pirl/data/dicomoutput.dcm")
-        return image_data
+        ds.save_as(save_path)
     
     def pickleMe(self, pickle_path='C:/PIRL/data/FlipCalPickle.pkl'):
         '''Uses dictionary comprehension to create a dictionary of all class attributes, then saves as pickle'''
