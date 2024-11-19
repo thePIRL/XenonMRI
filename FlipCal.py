@@ -949,26 +949,48 @@ class FlipCal:
 
 # FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
 
-FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
-FA3.printout(save_path='c:/pirl/data/FAprintout.png')
-FA3.dicomPrintout()
+# FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
+# FA3.printout(save_path='c:/pirl/data/FAprintout.png')
+# FA3.dicomPrintout()
 
+# # PIlist = ['PatientName','PatientID','PatientAge','PatientSex','PatientDOB','PatientWeight','IRB','FEV1','FVC','LCI','6MWT','DE','129XeEnrichment']
+# # SPlist = ['ProtocolName','systemVendor','institutionName','B0fieldStrength','FlipAngle','DisFrequencyOffset','referenceAmplitude','TE','TR','GasFrequency','nFIDs','nPts','scanDate','scanTime','referenceVoltage','dwellTime','FieldStrength','FOV','nSkip']
 
+# # for attr, value in FA3.metadata.items():
+# #     if attr in 
+# #     print(f"{attr} is {value}")
+# parent = 'C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix'
+# files = os.listdir(parent)
+# k=2
+# FA3 = FlipCal(pickle_path=os.path.join(parent,files[k]))
 
-# PIlist = ['PatientName','PatientID','PatientAge','PatientSex','PatientDOB','PatientWeight','IRB','FEV1','FVC','LCI','6MWT','DE','129XeEnrichment']
-# SPlist = ['ProtocolName','systemVendor','institutionName','B0fieldStrength','FlipAngle','DisFrequencyOffset','referenceAmplitude','TE','TR','GasFrequency','nFIDs','nPts','scanDate','scanTime','referenceVoltage','dwellTime','FieldStrength','FOV','nSkip']
-
-# for attr, value in FA3.metadata.items():
-#     if attr in 
-#     print(f"{attr} is {value}")
-
-# plt.plot(FA3.RO_fit_params[1,0,:])
-# plt.plot(FA3.RO_fit_params[0,0,:])
+# plt.plot(FA3.RO_fit_params[1,0,1:])#-membrane amplitudes
+# plt.plot(FA3.RO_fit_params[0,0,1:])#-RBC amplitudes
 # plt.show()
 
+# def flipCheck(a,b): # -- SVD can randomize the sign of data, lets check and fix if needed
+#     if np.sign(a.real[0]) != np.sign(b.real[0]):
+#         a = -a
+#     return a
+# ## -- Separate NOISE, DP, and GAS arrays -- ##
+# FA3.noise = FA3.FID[:,0] # --------------------------- The noise RO
+# FA3.DP = FA3.FID[:,1:500] # -------------------------- All DP ROs
+# FA3.GAS = FA3.FID[:,500:] # -------------------------- All GAS ROs
+# ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
+# [U,S,VT] = np.linalg.svd(FA3.DP[:,(1+FA3.scanParameters['nSkip']):])
+# S[:5]/S[0]
+# FA3.DPfid = flipCheck(U[:,0]*S[0]**2,FA3.DP[:,0]) # --------------- The best representation of a single DP readout
+# FA3.DPdecay = VT[0,:]*S[0] # ------------ The DP signal decay across readouts
+# FA3.RBCosc = VT[1,100:]*S[1] # ---------- The RBC oscillations
+# ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
+# [U,S,VT] = np.linalg.svd(FA3.GAS)
+# S[:5]/S[0]
+# plt.plot(S)
+# plt.show()
+# FA3.GASfid = flipCheck(U[:,0]*S[0]**2,FA3.GAS[:,0]) # ------------ The best representation of a single Gas readout
+# FA3.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
 
-
-## -- /playground -- ##
+# ## -- /playground -- ##
 
 
 
