@@ -636,7 +636,7 @@ class FlipCal:
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
 
     def printout(self,save_path = None):
-        '''Summarizes Flipcal in pdf and prints important stuff to console'''
+        '''Summarizes Flipcal in a png and prints important stuff to console'''
         ## --- CREATE FIGURE--- ##
         if save_path is None:
             save_path = f"C:/PIRL/data/FlipCal_{self.patientInfo['PatientName']}"
@@ -720,7 +720,9 @@ class FlipCal:
         print(f"\033[36mPrintout saved to \033[33m{save_path}\033[37m")
     
     def dicomPrintout(self,save_path = 'c:/pirl/data/dicomoutput.dcm'):
-        # -- First we create the plots to be dicomized -- #
+        '''Creates a 3D DICOM file (enhanced) where each image is a matplotlib pyplot.
+        For each plot we want to dicomize, we create a plot then convert to numpy array.
+        Then each array is stacked and a DICOM file is created (need to try this on PACS)'''
         # -- 1 - Gas Decay and Flip Angle
         fig_size = (7,4)
         fig, axa = plt.subplots(figsize = fig_size)
