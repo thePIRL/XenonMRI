@@ -408,7 +408,7 @@ class FlipCal:
             newS = FIDfunc_cf(t,*A)
             return np.sum(np.concatenate([S.real - newS.real, S.imag - newS.imag])**2)
         
-        lbounds = np.array([[0,-400,-180,0,0],[0,-1000,-180,0,0],[0,-10000,-180,0,0]])
+        lbounds = np.array([[0,-400,-180,0,0],[0,-1200,-180,0,0],[0,-10000,-180,0,0]])
         ubounds = np.array([[1,400,180,1000,1],[1,-400,180,1000,400],[1,-5000,180,100,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
         diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
