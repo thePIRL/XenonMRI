@@ -97,7 +97,7 @@ class FlipCal:
                          'nSkip': 100}
         
         # -- Created Attributes in SVD() -- ##
-        self.singular_values_to_keep = 3
+        self.singular_values_to_keep = 2
         self.noise = '' # --------- Single noise FID (column 0 of FID) 
         self.DP = '' # ------------ Dissolved phase FIDs (columns 1:499) 
         self.GAS = '' # ----------- Gas FIDs (columns 500:519) 
@@ -430,14 +430,9 @@ class FlipCal:
             data = kwargs['data']
         else:
             print('You did not give me data. Using self.DP')
-            internalDataMarker = False
+            internalDataMarker = True
             data = self.DP
-        if 'goFast' in kwargs:
-            print("Let's go fast!")
-            goFast = kwargs['goFast'] 
-        else:
-            print("Let's go slow!")
-            goFast = False
+        goFast = kwargs.get('goFast', False)
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
@@ -457,6 +452,7 @@ class FlipCal:
         if(not goFast):
             print("\033[35mFitting all DP FIDs. This may take awhile...\033[37m")
             for RO in tqdm(range(data.shape[1])):
+            #for RO in tqdm(range(3)):
                 RO_fit_params[:,:,RO] = self.fit_DP_FID(self.FID[:,RO],printResult=False)
         
         print(f"Time to fit all readouts: {np.round((time.time()-start_time)/60,2)} min")
