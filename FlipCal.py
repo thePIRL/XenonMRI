@@ -967,16 +967,19 @@ class FlipCal:
 # FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
 # FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
 
-FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/ClinicalPatient0014_KRM - 24090__meas_MID00442_FID110505_5_Xe_fid_calibration_dyn.dat")
-FA3.printout(save_path='c:/pirl/data/FAprintout.png')
-FA3.process()
-FA3.fit_all_DP_FIDs(data=FA3.smoothDP)
-FA3.printout(save_path='c:/pirl/data/FAprintout_SVD.png')
-plt.plot(FA3.RO_fit_params[0,0,1:]/FA3.RO_fit_params[1,0,1:])
-plt.plot(RO_fit_params[0,0,1:]/RO_fit_params[1,0,1:])
-plt.ylim((0,1))
-plt.show()
-RO_fit_params = FA3.RO_fit_params
+# FA3 = FlipCal(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0053 - 241025 - BL/MepoXe0053_Calibration.pkl")
+# oldRBC2MEM = FA3.RBC2MEM
+# plt.plot(oldRBC2MEM)
+# plt.ylim((0,1))
+# plt.show()
+# FA3.process()
+# newRBC2MEM = FA3.fit_all_DP_FIDs(data=FA3.smoothDP)
+
+# plt.plot(oldRBC2MEM)
+# plt.plot(newRBC2MEM)
+# plt.ylim((0,1))
+# plt.show()
+
 # plt.plot(FA3.RO_fit_params[1,0,1:])#-membrane amplitudes
 # plt.plot(FA3.RO_fit_params[0,0,1:])#-RBC amplitudes
 # plt.show()
@@ -1025,9 +1028,7 @@ if __name__ == "__main__":
                    [sg.Column(patient_data_column),sg.Canvas(key='-GASDECAY-'),sg.Canvas(key='-DPPLOT-')],
                    [sg.Canvas(key='-WIGGLES-')],
                    [sg.Button('Process FlipCal',key='process'),sg.Button('Process Wiggles',key='wiggles')],
-                   [sg.Text('Pickle Path'),sg.InputText(key='PICKLEpath',default_text='C:/PIRL/data/FlipCal.pkl',size=(100,1)),sg.Button('Create Pickle',key='pickle')],
-                   [sg.Text('ISMRMRD Path'),sg.InputText(key='ISMRMRDpath',default_text='C:/PIRL/data/FlipCal.h5',size=(100,1)),sg.Button('Create ISMRMRD',key='ismrmrd')],
-                   [sg.Text('Printout Path'),sg.InputText(key='PRINTOUTpath',default_text='C:/PIRL/data/FlipCal.png',size=(100,1)),sg.Button('Create Printout',key='printout')]]
+                   [sg.Text('Save Directory'),sg.InputText(key='SAVEpath',default_text='C:/PIRL/data/FA/',size=(100,1)),sg.Button('Save',key='savedata')]]
     
     window = sg.Window(f'PIRL FlipCal Analysis -- {version}', windowLayout, return_keyboard_events=True, margins=(0, 0), finalize=True, size= (1000,550),resizable=True)
     def draw_figure(canvas, figure):
@@ -1159,17 +1160,22 @@ if __name__ == "__main__":
                 FA.fit_all_DP_FIDs(goFast=False)
                 updateWiggles()
 ## --------------- SAVE PICKLE BUTTON --------------------------- ##
-        elif event == ('pickle'):
-            path = values['PICKLEpath']
-            FA.pickleMe(pickle_path=path)
-## --------------- SAVE PICKLE BUTTON --------------------------- ##
-        elif event == ('ismrmrd'):
-            path = values['ISMRMRDpath']
-            FA.exportISMRMRD(path)
-## --------------- SAVE PRINTOUT BUTTON --------------------------- ##
-        elif event == ('printout'):
-            printout_path = values['PRINTOUTpath']
-            FA.printout(save_path=printout_path)
+        elif event == ('savedata'):
+            SAVEpath = os.path.join(values['SAVEpath'],f"FlipCal_{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}/")
+            if not os.path.isdir(SAVEpath):
+                os.makedirs(SAVEpath)
+            try:
+                FA.pickleMe(pickle_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.pkl"))
+            except:
+                print('Could not pickle the FlipCal')    
+            try:
+                FA.printout(save_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.png"))
+            except:
+                print('Could not save the printout')    
+            try:
+                FA.dicomPrintout(save_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.dcm"))
+            except:
+                print('Could not save the Dicom')    
 ## --------------- Info Edit Buttons ------------------- ##
         elif event == ('editPatientName'):
             text = sg.popup_get_text('Enter Subject ID: ',default_text=FA.patientInfo['PatientName'])
