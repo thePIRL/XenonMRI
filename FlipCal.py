@@ -125,7 +125,6 @@ class FlipCal:
         self.RBC2MEMavg_svd = '' #  mean RBC/MEM ratio (skipping 100 ROs) from SVD DP vector
         self.RBCppm = '' # -------- Chem shift of RBC peak
         self.MEMppm = '' # -------- Chem shift of MEM peak
-
         ## -- Was a pickle or a pickle path provided? -- ##
         if pickle_path is not None:
             print(f'\n \033[35m # ------ Pickle path provided: {pickle_path}. ------ #\033[37m')
@@ -426,10 +425,19 @@ class FlipCal:
         '''Fits every DP RO to the 3-resonance-decay model - This is where our RBC oscillations come from
         Takes awhile. Need to get this going faster somehow.'''
         if 'data' in kwargs:
+            print('You gave me data')
+            internalDataMarker = False
             data = kwargs['data']
         else:
+            print('You did not give me data. Using self.DP')
+            internalDataMarker = False
             data = self.DP
-        goFast = kwargs['goFast'] if 'goFast' in kwargs else goFast = False
+        if 'goFast' in kwargs:
+            print("Let's go fast!")
+            goFast = kwargs['goFast'] 
+        else:
+            print("Let's go slow!")
+            goFast = False
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
@@ -452,12 +460,15 @@ class FlipCal:
                 RO_fit_params[:,:,RO] = self.fit_DP_FID(self.FID[:,RO],printResult=False)
         
         print(f"Time to fit all readouts: {np.round((time.time()-start_time)/60,2)} min")
-        if 'data' in kwargs:
+        if internalDataMarker:
+            print('casting fit results into attributes...')
             self.RO_fit_params = RO_fit_params
             self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
             self.calcWiggleAmp()
         else:
+            print('Returning Values')
+            self.results = RO_fit_params
             return RO_fit_params
     
     def calcWiggleAmp(self): 
@@ -471,7 +482,7 @@ class FlipCal:
             self.RBC2MEMamp = 2*np.mean(np.abs(hilb)) # times 2 for Pk-pk
         except:
             print('You gotta run fit_all_DP_FIDs() first...')
-
+    
     ## -- Plot Draw Functions -- ##
     def draw_GAS_phasor(self,ax4):
         gasPhasor_nTE = self.FIDFitfunction(-435e-6,*self.gas_fit_params)
@@ -501,7 +512,7 @@ class FlipCal:
         ax5.set_xlim([-0.43,10])
         ax5.set_ylim([-np.max(abs(self.GASfid)),np.max(abs(self.GASfid))])
         ax5.set_xlabel('time [ms]')
-
+    
     def draw_GAS_spectrum(self,ax6):
         ax6.set_title('Gas Spectrum')
         w = np.linspace(-0.5,0.5,len(self.GASfid))/self.scanParameters['dwellTime']
@@ -516,7 +527,7 @@ class FlipCal:
         ax6.text(1000,0.3*np.max(abs(F)),f"  L = {np.round(self.gas_fit_params[3],0)} [Hz]",fontsize=9)
         ax6.text(1000,0.1*np.max(abs(F)),f"  G = {np.round(self.gas_fit_params[4],0)} [Hz]",fontsize=9)
         ax6.set_xlabel('frequency [Hz]')
-
+    
     def draw_DP_phasor(self,axc):
         TE = int(self.scanParameters['TE'])*1e-6
         RBC_n0 = self.FIDFitfunction(0, *self.DP_fit_params[0,:])
@@ -535,7 +546,7 @@ class FlipCal:
         axc.set_ylim([-1,1])
         axc.set_xlim([-1,1])
         axc.set_axis_off()
-
+    
     def draw_DP_FID(self,ax8):
         T = np.linspace(-int(self.scanParameters['TE']),0.01,1000)
         RBC_t = self.FIDFitfunction(T,*self.DP_fit_params[0,:])
@@ -571,7 +582,7 @@ class FlipCal:
         axd.set_xlim([-0.43,7])
         axd.set_ylim([-np.max(abs(MEM)),np.max(abs(MEM))])
         axd.set_xlabel('time [ms]')
-
+    
     def draw_DP_spectrum(self,ax9):
         ax9.set_title('DP spectrum')
         w = np.linspace(-0.5,0.5,len(self.DPfid))/self.scanParameters['dwellTime']
@@ -581,7 +592,7 @@ class FlipCal:
         ax9.plot(w,F.imag,c=(0.4,0,0.7))
         ax9.set_xlim([-10000,3000])
         ax9.set_xlabel('frequency [Hz]')
-
+    
     def draw_DP_spectra_fit(self,axe):
         axe.set_title('DP Spectra Fits')
         w = np.linspace(-0.5,0.5,len(self.t))/self.scanParameters['dwellTime']
@@ -617,7 +628,7 @@ class FlipCal:
         axe.text(-500,0.70*scalor,f"{np.round(self.DP_fit_params[0,3])} [Hz]",fontsize=9,color=(0.5,0,0),fontweight='bold')
         axe.text(-500,0.60*scalor,f"{np.round(self.DP_fit_params[0,4])} [Hz]",fontsize=9,color=(0.5,0,0),fontweight='bold')
         axe.text(-6000,0.4*scalor,f"TE90 = {np.round(self.TE90,3)} [ms]",fontsize=9,fontweight='bold')
-
+    
     def draw_GAS_decay(self,axa):
         axa.set_title('Gas Decay')
         gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
@@ -629,7 +640,7 @@ class FlipCal:
         axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.90,f"New Ref Voltage: {np.round(self.newVoltage)} [V]",fontsize=10.5)
         axa.text(np.max(xdata)*0.3,np.max(self.gasDecay)*0.85,f"TE90: {np.round(self.TE90,3)} [ms]",fontsize=10.5)
         axa.set_title(f"Flip Cal: V_ref = {self.scanParameters['referenceVoltage']}, FA = 20°")
-
+    
     def draw_wiggles(self,axb):
         try:
             axb.set_title('Wiggles')
@@ -643,7 +654,7 @@ class FlipCal:
         except:
             print(f"No Wiggles to print")
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
-
+    
     def printout(self,save_path = None):
         '''Summarizes Flipcal in a png and prints important stuff to console'''
         ## --- CREATE FIGURE--- ##
@@ -835,7 +846,7 @@ class FlipCal:
         '''Given a pickled dictionary (yep, I actually named a variable pickle_dict), it will extract entries to class attributes'''
         for attr, value in pickle_dict.items():
             setattr(self, attr, value)
-
+    
     def exportISMRMRD(self,path='c:/pirl/data/ISMRMRD.h5'):
             '''Consortium-Required Parameters: https://github.com/Xe-MRI-CTC/siemens-to-mrd-converter'''
             if os.path.exists(path):
@@ -912,7 +923,7 @@ class FlipCal:
         with open(output_path, 'w') as fp:
             json.dump(extract_attributes(twix_header), fp,indent=2)
         return twix_header
-
+    
     def __repr__(self):
         string = (f'\033[35mFlipCal\033[37m class object version \033[94m{self.version}\033[37m\n')
         for attr, value in vars(self).items():
@@ -956,19 +967,16 @@ class FlipCal:
 # FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
 # FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
 
-FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
+FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/ClinicalPatient0014_KRM - 24090__meas_MID00442_FID110505_5_Xe_fid_calibration_dyn.dat")
 FA3.printout(save_path='c:/pirl/data/FAprintout.png')
 FA3.process()
-RO_fit_params = FA3.fit_all_DP_FIDs(data=FA3.smoothDP)
+FA3.fit_all_DP_FIDs(data=FA3.smoothDP)
 FA3.printout(save_path='c:/pirl/data/FAprintout_SVD.png')
-plt.plot(FA3.RBC2MEM)
+plt.plot(FA3.RO_fit_params[0,0,1:]/FA3.RO_fit_params[1,0,1:])
+plt.plot(RO_fit_params[0,0,1:]/RO_fit_params[1,0,1:])
 plt.ylim((0,1))
 plt.show()
-plt.imshow(abs(FA3.DP))
-plt.imshow(abs(FA3.smoothDP))
-FA3.printout()
-FA3.dicomPrintout()
-
+RO_fit_params = FA3.RO_fit_params
 # plt.plot(FA3.RO_fit_params[1,0,1:])#-membrane amplitudes
 # plt.plot(FA3.RO_fit_params[0,0,1:])#-RBC amplitudes
 # plt.show()
