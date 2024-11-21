@@ -97,6 +97,7 @@ class FlipCal:
                          'nSkip': 100}
         
         # -- Created Attributes in SVD() -- ##
+        self.singular_values_to_keep = 3
         self.noise = '' # --------- Single noise FID (column 0 of FID) 
         self.DP = '' # ------------ Dissolved phase FIDs (columns 1:499) 
         self.GAS = '' # ----------- Gas FIDs (columns 500:519) 
@@ -105,31 +106,26 @@ class FlipCal:
         self.RBCosc = '' # -------- Second V column in Dp SVD (mostly captures wiggles)
         self.GASfid = '' # -------- First U column in GAS SVD (best representation of single GAS fid)
         self.gasDecay = '' # ------ First V column in GAS SVD (captures decay due to depolarization)
-
         # -- Attributes Created in fit_GAS_FID()
         self.gas_fit_params = '' # ---- A (1,5) of gas FID fit parameters [area, freq, phase, fwhmL, fwhmG]
         self.newGasFrequency = '' # --- Actual 129Xe Gas NMR frequency
-
         # -- Attributes Created in getFlipAngle()
         self.flipAngleFitParams = '' # -- parameters of gas Decay fit
         self.flip_angle = '' # ---------- Actual Delivered Flip Angle
         self.flip_err = '' # ------------ Error in calculated flip angle
         self.newVoltage = '' # ---------- Voltage that /would/ yield a 20° flip (to be given to DP)
-
         # -- Attributes Created in fit_DP_FID()
         self.DP_fit_params = '' #-- A (3,5) of DP FID fit parameters [row 0: RBC, row 1: MEM, row 2: GAS]
-
         # -- Attributes Created in fit_all_DP_FIDs()
         self.RBC2MEM = '' #-------- A vector of RBC/membrane ratio for all DP ROs
         self.RBC2MEMavg = '' # ---- mean RBC/MEM ratio (skipping 100 ROs) from wiggles
         self.RBC2MEMamp = '' # ---- mean amplitude of RBC/MEM wiggles
-
         # -- Attributes Created in process()
         self.TE90 = '' # ---------- Time to 90° difference b/t RBC and MEM
         self.RBC2MEMavg_svd = '' #  mean RBC/MEM ratio (skipping 100 ROs) from SVD DP vector
         self.RBCppm = '' # -------- Chem shift of RBC peak
         self.MEMppm = '' # -------- Chem shift of MEM peak
-        
+
         ## -- Was a pickle or a pickle path provided? -- ##
         if pickle_path is not None:
             print(f'\n \033[35m # ------ Pickle path provided: {pickle_path}. ------ #\033[37m')
@@ -166,11 +162,11 @@ class FlipCal:
             self.parseMatlab()
             print(f"\n \033[35m # ------ FlipCal MatLab path {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
         
-                ## -- Was a twix object or path provided?
+        ## -- Was a twix object or path provided?
         if ismrmrd_path is not None:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
             print(f"\n \033[35m # ------ FlipCal ISMRMRD path {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
-
+    
     def process(self):
         '''This does the entire Calibration processing pipeline /except/ the wiggles'''
         self.SVD()
@@ -317,7 +313,7 @@ class FlipCal:
         self.scanParameters['dwellTime'] = acquisition_header.sample_time_us*1e-6
         self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
         ismrmrd_object.close()
-
+    
     def SVD(self):
         """Performs Singular Value Decomposition for analysis"""
         def flipCheck(a,b): # -- SVD can randomize the sign of data, lets check and fix if needed
@@ -329,10 +325,14 @@ class FlipCal:
         self.DP = self.FID[:,1:500] # -------------------------- All DP ROs
         self.GAS = self.FID[:,500:] # -------------------------- All GAS ROs
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
-        [U,S,VT] = np.linalg.svd(self.DP[:,(1+self.scanParameters['nSkip']):])
+        [U,S,VT] = np.linalg.svd(self.DP)
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # ------------ The DP signal decay across readouts
         self.RBCosc = VT[1,100:]*S[1] # ---------- The RBC oscillations
+        S[self.singular_values_to_keep:] = 0
+        Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
+        Smat[:len(S),:len(S)] = np.diag(S)
+        self.smoothDP = U @ Smat  @ VT
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS)
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
@@ -422,10 +422,15 @@ class FlipCal:
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
     
-    def fit_all_DP_FIDs(self,goFast=False):
+    def fit_all_DP_FIDs(self,**kwargs):
         '''Fits every DP RO to the 3-resonance-decay model - This is where our RBC oscillations come from
         Takes awhile. Need to get this going faster somehow.'''
-        self.RO_fit_params = np.zeros((3, 5, 499))
+        if 'data' in kwargs:
+            data = kwargs['data']
+        else:
+            data = self.DP
+        goFast = kwargs['goFast'] if 'goFast' in kwargs else goFast = False
+        RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
         if(goFast):
@@ -437,20 +442,24 @@ class FlipCal:
                 concurrent.futures.as_completed(futures)
                 RO = 0
                 for future in tqdm(futures):
-                    self.RO_fit_params[:, :, RO+1] = future.result()
+                    RO_fit_params[:, :, RO+1] = future.result()
                     RO += 1
         
         #-- Slow. Use this if you're not pressed for time and need your CPU freed up (about 20-30 min)
         if(not goFast):
             print("\033[35mFitting all DP FIDs. This may take awhile...\033[37m")
-            for RO in tqdm(range(498)):
-                self.RO_fit_params[:,:,RO+1] = self.fit_DP_FID(self.FID[:,RO+1],printResult=False)
+            for RO in tqdm(range(data.shape[1])):
+                RO_fit_params[:,:,RO] = self.fit_DP_FID(self.FID[:,RO],printResult=False)
         
         print(f"Time to fit all readouts: {np.round((time.time()-start_time)/60,2)} min")
-        self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
-        self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
-        self.calcWiggleAmp()
-
+        if 'data' in kwargs:
+            self.RO_fit_params = RO_fit_params
+            self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
+            self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
+            self.calcWiggleAmp()
+        else:
+            return RO_fit_params
+    
     def calcWiggleAmp(self): 
         def hilbert(S):
             F = np.fft.fftshift(np.fft.fft(S))
@@ -639,7 +648,7 @@ class FlipCal:
         '''Summarizes Flipcal in a png and prints important stuff to console'''
         ## --- CREATE FIGURE--- ##
         if save_path is None:
-            save_path = f"C:/PIRL/data/FlipCal_{self.patientInfo['PatientName']}"
+            save_path = f"C:/PIRL/data/FlipCal_{self.patientInfo['PatientName']}.png"
         fig = plt.figure(constrained_layout=True)
         fig.set_size_inches(18,9)
         gs = fig.add_gridspec(4, 8, left=0.05, right=0.95, hspace=0.5, wspace=0.5)
@@ -947,48 +956,22 @@ class FlipCal:
 # FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
 # FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
 
-# FA2 = FlipCal(ismrmrd_path='C:/PIRL/data/ISMRMRD.h5')
-
-# FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
-# FA3.printout(save_path='c:/pirl/data/FAprintout.png')
-# FA3.dicomPrintout()
-
-# # PIlist = ['PatientName','PatientID','PatientAge','PatientSex','PatientDOB','PatientWeight','IRB','FEV1','FVC','LCI','6MWT','DE','129XeEnrichment']
-# # SPlist = ['ProtocolName','systemVendor','institutionName','B0fieldStrength','FlipAngle','DisFrequencyOffset','referenceAmplitude','TE','TR','GasFrequency','nFIDs','nPts','scanDate','scanTime','referenceVoltage','dwellTime','FieldStrength','FOV','nSkip']
-
-# # for attr, value in FA3.metadata.items():
-# #     if attr in 
-# #     print(f"{attr} is {value}")
-# parent = 'C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix'
-# files = os.listdir(parent)
-# k=2
-# FA3 = FlipCal(pickle_path=os.path.join(parent,files[k]))
+FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_pkl_fromTwix/Xe-0070.230921.meas_MID00308_FID19262_5_fid_xe_calibration_2201.dat")
+FA3.printout(save_path='c:/pirl/data/FAprintout.png')
+FA3.process()
+RO_fit_params = FA3.fit_all_DP_FIDs(data=FA3.smoothDP)
+FA3.printout(save_path='c:/pirl/data/FAprintout_SVD.png')
+plt.plot(FA3.RBC2MEM)
+plt.ylim((0,1))
+plt.show()
+plt.imshow(abs(FA3.DP))
+plt.imshow(abs(FA3.smoothDP))
+FA3.printout()
+FA3.dicomPrintout()
 
 # plt.plot(FA3.RO_fit_params[1,0,1:])#-membrane amplitudes
 # plt.plot(FA3.RO_fit_params[0,0,1:])#-RBC amplitudes
 # plt.show()
-
-# def flipCheck(a,b): # -- SVD can randomize the sign of data, lets check and fix if needed
-#     if np.sign(a.real[0]) != np.sign(b.real[0]):
-#         a = -a
-#     return a
-# ## -- Separate NOISE, DP, and GAS arrays -- ##
-# FA3.noise = FA3.FID[:,0] # --------------------------- The noise RO
-# FA3.DP = FA3.FID[:,1:500] # -------------------------- All DP ROs
-# FA3.GAS = FA3.FID[:,500:] # -------------------------- All GAS ROs
-# ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
-# [U,S,VT] = np.linalg.svd(FA3.DP[:,(1+FA3.scanParameters['nSkip']):])
-# S[:5]/S[0]
-# FA3.DPfid = flipCheck(U[:,0]*S[0]**2,FA3.DP[:,0]) # --------------- The best representation of a single DP readout
-# FA3.DPdecay = VT[0,:]*S[0] # ------------ The DP signal decay across readouts
-# FA3.RBCosc = VT[1,100:]*S[1] # ---------- The RBC oscillations
-# ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
-# [U,S,VT] = np.linalg.svd(FA3.GAS)
-# S[:5]/S[0]
-# plt.plot(S)
-# plt.show()
-# FA3.GASfid = flipCheck(U[:,0]*S[0]**2,FA3.GAS[:,0]) # ------------ The best representation of a single Gas readout
-# FA3.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
 
 # ## -- /playground -- ##
 
