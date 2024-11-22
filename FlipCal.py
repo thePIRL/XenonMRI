@@ -331,7 +331,7 @@ class FlipCal:
         S[self.singular_values_to_keep:] = 0
         Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
         Smat[:len(S),:len(S)] = np.diag(S)
-        self.smoothDP = U @ Smat  @ VT
+        self.smoothDP = U @ Smat  @ VT #our experience shows this SVDing to denoise doesn't really help much
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS)
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
