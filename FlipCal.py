@@ -127,7 +127,7 @@ class FlipCal:
         self.MEMppm = '' # -------- Chem shift of MEM peak
         ## -- Was a pickle or a pickle path provided? -- ##
         if pickle_path is not None:
-            print(f'\n \033[35m # ------ Pickle path provided: {pickle_path}. ------ #\033[37m')
+            #print(f'\n \033[35m # ------ Pickle path provided: {pickle_path}. ------ #\033[37m')
             try:
                 with open(pickle_path, 'rb') as file:
                     pickle_dict = pickle.load(file)
