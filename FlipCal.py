@@ -419,6 +419,7 @@ class FlipCal:
             print(f"\033[36mRBC:\033[37m {np.round(de[0,0]/de[1,0],3)} -- {np.round(de[0,1],0)} -- {np.round(de[0,2],1)} -- {np.round(de[0,3],1)} -- {np.round(de[0,4],1)}")
             print(f"\033[36mMEM:\033[37m {np.round(de[1,0]/de[1,0],3)} -- {np.round(de[1,1],0)} -- {np.round(de[1,2],1)} -- {np.round(de[1,3],1)} -- {np.round(de[1,4],1)}")
             print(f"\033[36mGAS:\033[37m {np.round(de[2,0]/de[1,0],3)} -- {np.round(de[2,1],0)} -- {np.round(de[2,2],1)} -- {np.round(de[2,3],1)} -- {np.round(de[2,4],1)}")
+            print(f"\033[36mRBC2MEM ratio = {FA.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])}")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
     
@@ -965,32 +966,6 @@ class FlipCal:
                 string += (f'\033[32m {attr}: \033[36m{value} \033[37m\n')
         return string
 
-
-
-# ## -- playground -- ##
-# FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
-# FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
-
-# FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_Processed/Xe-0083_meas_MID00377_FID06374_5_Xe_fid_calibration_dyn.dat.pkl")
-# plt.plot(FA3.RBC2MEM)
-# RBC2MEMcor = FA3.correctRBC2MEM(FA3.RO_fit_params[0,0,:],FA3.RO_fit_params[1,0,:],FA3.RO_fit_params[0,1,:],FA3.RO_fit_params[1,1,:])
-# RBC2MEMavgcor = np.mean(FA3.RBC2MEM[FA3.scanParameters['nSkip']:])
-# plt.plot(RBC2MEMcor)
-# plt.ylim((0,1))
-# plt.show()
-
-
-
-# plt.plot(oldRBC2MEM)
-# plt.plot(newRBC2MEM)
-# plt.ylim((0,1))
-# plt.show()
-
-# plt.plot(FA3.RO_fit_params[1,0,1:])#-membrane amplitudes
-# plt.plot(FA3.RO_fit_params[0,0,1:])#-RBC amplitudes
-# plt.show()
-
-# ## -- /playground -- ##
 
 
 
