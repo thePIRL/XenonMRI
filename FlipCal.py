@@ -46,7 +46,8 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '241115_calibration' 
+        self.version = '241206_calibration' 
+        # -- 241206, RBC2MEM corrected based on excitation profile
         # -- 241115, Now saves plots as dicoms
         # -- 241030, ISMRMRD format now included
         # -- 241025, metadata updated to scanParameters and patientInfo
@@ -457,16 +458,23 @@ class FlipCal:
         
         print(f"Time to fit all readouts: {np.round((time.time()-start_time)/60,2)} min")
         if internalDataMarker:
-            print('casting fit results into attributes...')
+            print('casting fit results into attributes RO_fit_params, RBC2MEM, and RBC2MEMavg...')
             self.RO_fit_params = RO_fit_params
-            self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
+            self.RBC2MEM = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:])
             self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
             self.calcWiggleAmp()
         else:
             print('Returning Values')
             self.results = RO_fit_params
             return RO_fit_params
-    
+
+    def correctRBC2MEM(self,Srbc,Smem,wrbc,wmem): 
+        '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetization ratio
+        essentially this corrects for the fact that spins experience different flip angles based on their frequency (see Bechtel MRM 2023)'''
+        def kappa(offset):
+            return 1 - offset**2*3.786933e-7 + offset**4*5.225874e-14 - offset**6*2.961329e-21
+        return (Srbc/Smem)*np.sin(kappa(wmem)*np.pi / 9)/np.sin(kappa(wrbc)*np.pi / 9)
+
     def calcWiggleAmp(self): 
         def hilbert(S):
             F = np.fft.fftshift(np.fft.fft(S))
@@ -963,13 +971,15 @@ class FlipCal:
 # FA1 = FlipCal(twix_path="C:/PIRL/data/MEPOXE0039/meas_MID00076_FID58045_5_fid_xe_calibration_2201.dat")
 # FA1.writeISMRMRD('C:/PIRL/data/ISMRMRD.h5')
 
-# FA3 = FlipCal(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0053 - 241025 - BL/MepoXe0053_Calibration.pkl")
-# oldRBC2MEM = FA3.RBC2MEM
-# plt.plot(oldRBC2MEM)
+# FA3 = FlipCal(pickle_path="C:/PIRL/data/FlipCal/FlipCal_Processed/Xe-0083_meas_MID00377_FID06374_5_Xe_fid_calibration_dyn.dat.pkl")
+# plt.plot(FA3.RBC2MEM)
+# RBC2MEMcor = FA3.correctRBC2MEM(FA3.RO_fit_params[0,0,:],FA3.RO_fit_params[1,0,:],FA3.RO_fit_params[0,1,:],FA3.RO_fit_params[1,1,:])
+# RBC2MEMavgcor = np.mean(FA3.RBC2MEM[FA3.scanParameters['nSkip']:])
+# plt.plot(RBC2MEMcor)
 # plt.ylim((0,1))
 # plt.show()
-# FA3.process()
-# newRBC2MEM = FA3.fit_all_DP_FIDs(data=FA3.smoothDP)
+
+
 
 # plt.plot(oldRBC2MEM)
 # plt.plot(newRBC2MEM)
