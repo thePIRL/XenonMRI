@@ -174,7 +174,7 @@ class FlipCal:
         self.getFlipAngle()
         self.DP_fit_params = self.fit_DP_FID()
         self.RBC2MEMs = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
-        self.RBC2MEMm = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
+        self.RBC2MEMm = self.correctRBC2MEM(self.DP_fit_params[0,0],self.DP_fit_params[1,0],self.DP_fit_params[0,1],self.DP_fit_params[1,1]) #(Srbc,Smem,wrbc,wmem)
         deltaPhase = (self.DP_fit_params[0,2] - self.DP_fit_params[1,2])
         deltaPhase = np.mod(np.abs(deltaPhase),180)
         deltaF = abs(self.DP_fit_params[0,1] - self.DP_fit_params[1,1])
@@ -328,8 +328,8 @@ class FlipCal:
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
         [U,S,VT] = np.linalg.svd(self.DP[:,self.scanParameters['nSkip']:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
-        self.DPdecay = VT[0,:]*S[0] # ------------ The DP signal decay across readouts
-        self.RBCosc = VT[1,100:]*S[1] # ---------- The RBC oscillations
+        self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
+        self.RBCosc = VT[1,100:]*S[1] # ------------------------------------- The RBC oscillations
         S[self.singular_values_to_keep:] = 0
         Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
         Smat[:len(S),:len(S)] = np.diag(S)
@@ -439,6 +439,7 @@ class FlipCal:
         goFast = kwargs.get('goFast', False)
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
+
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
         if(goFast):
             print("\033[35mFitting all DP FIDs using Concurrent Futures. This may take awhile...\033[37m")
@@ -464,7 +465,7 @@ class FlipCal:
             print('casting fit results into attributes RO_fit_params, RBC2MEM, and RBC2MEMavg...')
             self.RO_fit_params = RO_fit_params
             self.RBC2MEM = RO_fit_params[0,0,:]/RO_fit_params[1,0,:]
-            _,_, self.RBC2MEMcorrected = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:])
+            self.Mrbc , self.Mmem, self.RBC2MEMcorrected = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:])
             self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
             self.calcWiggleAmp()
         else:
