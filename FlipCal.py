@@ -173,7 +173,8 @@ class FlipCal:
         self.gas_fit_params, self.newGasFrequency = self.fit_GAS_FID()
         self.getFlipAngle()
         self.DP_fit_params = self.fit_DP_FID()
-        self.RBC2MEMavg_svd = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
+        self.RBC2MEMs = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
+        self.RBC2MEMm = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
         deltaPhase = (self.DP_fit_params[0,2] - self.DP_fit_params[1,2])
         deltaPhase = np.mod(np.abs(deltaPhase),180)
         deltaF = abs(self.DP_fit_params[0,1] - self.DP_fit_params[1,1])
@@ -325,7 +326,7 @@ class FlipCal:
         self.DP = self.FID[:,1:500] # -------------------------- All DP ROs
         self.GAS = self.FID[:,500:] # -------------------------- All GAS ROs
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
-        [U,S,VT] = np.linalg.svd(self.DP)
+        [U,S,VT] = np.linalg.svd(self.DP[:,self.scanParameters['nSkip']:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # ------------ The DP signal decay across readouts
         self.RBCosc = VT[1,100:]*S[1] # ---------- The RBC oscillations
@@ -408,8 +409,8 @@ class FlipCal:
             newS = FIDfunc_cf(t,*A)
             return np.sum(np.concatenate([S.real - newS.real, S.imag - newS.imag])**2)
         
-        lbounds = np.array([[0,-400,-180,0,0],[0,-1200,-180,0,0],[0,-10000,-180,0,0]])
-        ubounds = np.array([[1,400,180,1000,1],[1,-400,180,1000,400],[1,-5000,180,100,1]])
+        lbounds = np.array([[0,-350,-180,0,0],[0,-1200,-180,0,0],[0,-10000,-180,0,0]])
+        ubounds = np.array([[1,400,180,1000,1],[1,-350,180,1000,400],[1,-5000,180,100,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
         diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
         de = np.reshape(diffev.x,(3,5))
@@ -419,7 +420,8 @@ class FlipCal:
             print(f"\033[36mRBC:\033[37m {np.round(de[0,0]/de[1,0],3)} -- {np.round(de[0,1],0)} -- {np.round(de[0,2],1)} -- {np.round(de[0,3],1)} -- {np.round(de[0,4],1)}")
             print(f"\033[36mMEM:\033[37m {np.round(de[1,0]/de[1,0],3)} -- {np.round(de[1,1],0)} -- {np.round(de[1,2],1)} -- {np.round(de[1,3],1)} -- {np.round(de[1,4],1)}")
             print(f"\033[36mGAS:\033[37m {np.round(de[2,0]/de[1,0],3)} -- {np.round(de[2,1],0)} -- {np.round(de[2,2],1)} -- {np.round(de[2,3],1)} -- {np.round(de[2,4],1)}")
-            print(f"\033[36mRBC2MEM ratio = {FA.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])}")
+            _,_,RBC2MEMm = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
+            print(f"\033[36mRBC2MEM ratio = {RBC2MEMm}")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
     
@@ -461,7 +463,8 @@ class FlipCal:
         if internalDataMarker:
             print('casting fit results into attributes RO_fit_params, RBC2MEM, and RBC2MEMavg...')
             self.RO_fit_params = RO_fit_params
-            self.RBC2MEM = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:])
+            self.RBC2MEM = RO_fit_params[0,0,:]/RO_fit_params[1,0,:]
+            _,_, self.RBC2MEMcorrected = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:])
             self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
             self.calcWiggleAmp()
         else:
@@ -470,11 +473,14 @@ class FlipCal:
             return RO_fit_params
 
     def correctRBC2MEM(self,Srbc,Smem,wrbc,wmem): 
-        '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetization ratio
+        '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetizations and ratio
         essentially this corrects for the fact that spins experience different flip angles based on their frequency (see Bechtel MRM 2023)'''
         def kappa(offset):
             return 1 - offset**2*3.786933e-7 + offset**4*5.225874e-14 - offset**6*2.961329e-21
-        return (Srbc/Smem)*np.sin(kappa(wmem)*np.pi / 9)/np.sin(kappa(wrbc)*np.pi / 9)
+        Mrbc = Srbc/np.sin(kappa(wrbc)*np.pi / 9)
+        Mmem = Smem/np.sin(kappa(wmem)*np.pi / 9)
+        RBC2MEMm = Mrbc/Mmem
+        return Mrbc, Mmem, RBC2MEMm
 
     def calcWiggleAmp(self): 
         def hilbert(S):

@@ -84,7 +84,7 @@ def getRadiiIndices(data):
     sphere_rads = sphere_rads[sphere_rads > 0] - 1
     return sphere_rads
 
-def calculate_CV(defectArrayShape,activeVoxel,defVec,spherePx):
+def calculate_CV(defectArrayShape,activeVoxel,defVec,spherePx,maskVec): ##RPT 12/16/2024
     '''Given the defectArray shape (length 3 vector), activeVoxel (length 3 vector specifying index row/col/slice), defVec 
         (vector of defect voxel indices cast to vector by px2vec), and spherePx (the Nx4 array from spherePix), it will
         calculate that voxel's CV by increasing the radius in spherePx until less than half of the voxels in the sphere
@@ -93,8 +93,9 @@ def calculate_CV(defectArrayShape,activeVoxel,defVec,spherePx):
     sphereVec = px2vec(spherePx[:,1]+activeVoxel[0],spherePx[:,2]+activeVoxel[1],spherePx[:,3]+activeVoxel[2],defectArrayShape)
     for ii in sphereRads:
         growBreak = 0
-        C = len(np.intersect1d(sphereVec[:ii],defVec))/len(sphereVec[:ii])
-        if C<0.5:
+        C = len(np.intersect1d(sphereVec[:ii],defVec))/len(sphereVec[:ii]) ##RPT 12/16/2024
+        #C = len(np.intersect1d(sphereVec[:ii],defVec))/len(np.intersect1d(sphereVec[:ii],maskVec))##RPT 12/16/2024
+        if C<0.5:##RPT 12/16/2024
             growBreak = 1
             break
     
@@ -104,7 +105,7 @@ def calculate_CV(defectArrayShape,activeVoxel,defVec,spherePx):
 
     return np.append(activeVoxel,spherePx[ii-1,0])
 
-def calculate_CI(defectArray,vox=[1,1,1],Rmax=50,type='fast'):
+def calculate_CI(defectArray,mask,vox=[1,1,1],Rmax=50,type='fast'):
     '''Calculates CVs for the entire defectArray.
         This is a separate function from calculate_CV so that it can use the 
         concurrent futures module for rapid calculation of CI
@@ -117,12 +118,16 @@ def calculate_CI(defectArray,vox=[1,1,1],Rmax=50,type='fast'):
     defList = multi_which(defectArray*1)
     defVec = px2vec(defList[:,0],defList[:,1],defList[:,2],defectArray.shape)
 
+    ## -- Create the mask voxel list and vectorize it -- ####RPT 12/16/2024
+    maskList = multi_which(mask*1)##RPT 12/16/2024
+    maskVec = px2vec(maskList[:,0],maskList[:,1],maskList[:,2],defectArray.shape)##RPT 12/16/2024
+
     ## -- slow CI calculation (doesn't use concurrent futures)-- ##
     if type == 'slow':
         start_time = time.time()
         CI = defectArray*0
         for k in tqdm(range(len(defVec)), desc="Processing",unit="iteration"):
-            CI[defList[k,0],defList[k,1],defList[k,2]] = calculate_CV(defectArray.shape,defList[k,:],defVec,spherePx)[3] ## -- NEEDS FIXING -- ##
+            CI[defList[k,0],defList[k,1],defList[k,2]] = calculate_CV(defectArray.shape,defList[k,:],defVec,spherePx,maskVec)[3] ##RPT 12/16/2024
         print(f"Time to calculate slow CI array: {np.round((time.time()-start_time)/60,2)} min")
 
     ## -- fast CI calculation (uses concurrent futures)-- ##
@@ -131,7 +136,7 @@ def calculate_CI(defectArray,vox=[1,1,1],Rmax=50,type='fast'):
         start_time = time.time()
         with concurrent.futures.ThreadPoolExecutor() as executor:
             print('\n Generating futures list...')
-            CI_futures = [executor.submit(calculate_CV,defectArray.shape,defList[k,:],defVec,spherePx) for k in tqdm(range(defList.shape[0]))]
+            CI_futures = [executor.submit(calculate_CV,defectArray.shape,defList[k,:],defVec,spherePx,maskVec) for k in tqdm(range(defList.shape[0]))] ##RPT 12/16/2024
             print('\n Calculating CI map...')
             concurrent.futures.as_completed(CI_futures)
             for f1 in tqdm(CI_futures):

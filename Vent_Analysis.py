@@ -276,14 +276,12 @@ class Vent_Analysis:
 
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
         self.defect_thresholds = [thresh, _95th_percentile_signal_value*0.34/mean_signal, low_xenon_threshold/mean_signal]
-
-
         
         print('\033[32mcalculate_VDP ran successfully\033[37m')
 
     def calculate_CI(self):
         '''Calculates the Cluster Index Array and reports the subject's cluster index (CI)'''
-        self.CIarray = CI.calculate_CI(self.defectArray,self.vox)
+        self.CIarray = CI.calculate_CI(self.defectArray,self.mask,self.vox)
         CVlist = np.sort(self.CIarray[self.defectArray>0])
         index95 = int(0.95*len(CVlist))
         self.metadata['CI'] = CVlist[index95]
