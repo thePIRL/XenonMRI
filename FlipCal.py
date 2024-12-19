@@ -178,7 +178,6 @@ class FlipCal:
         self.RBC2MEMsig = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
         self.RBC2MEMmag = self.correctRBC2MEM(self.DP_fit_params[0,0],self.DP_fit_params[1,0],self.DP_fit_params[0,1],self.DP_fit_params[1,1])
         self.RBC2MEMdix = self.RBC2MEMmag/np.sin(np.pi/9*self.kappa(self.DP_fit_params[1,1] - self.DP_fit_params[0,1]))
-        self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
         deltaPhase = (self.DP_fit_params[0,2] - self.DP_fit_params[1,2])
         deltaPhase = np.mod(np.abs(deltaPhase),180)
         deltaF = abs(self.DP_fit_params[0,1] - self.DP_fit_params[1,1])
@@ -186,11 +185,12 @@ class FlipCal:
         self.RBCppm = 1e6*(self.DP_fit_params[0,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         self.MEMppm = 1e6*(self.DP_fit_params[1,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         try:
-            self.calcWiggleAmp()
+            self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
-            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMmag} from SVD and {self.RBC2MEMmag_wiggles} from wiggles\n\033[37m")
-            print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {self.RBC2MEMdix_wiggles} from wiggles\n\033[37m")
-            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMsig} from SVD and {self.RBC2MEMsig_wiggles} from wiggles\n\033[37m")
+            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
+            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\n\033[37m")
+            print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\n\033[37m")
+            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\n\033[37m")
         except:
             print('RBC2MEM not not in attributes. Need to run fit_all_DP_FIDs() method to get wiggles.')
             print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMmag} from SVD \n\033[37m")
@@ -343,10 +343,10 @@ class FlipCal:
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
         self.RBCosc = VT[1,100:]*S[1] # ------------------------------------- The RBC oscillations
-        S[self.singular_values_to_keep:] = 0
-        Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
-        Smat[:len(S),:len(S)] = np.diag(S)
-        self.smoothDP = U @ Smat  @ VT #our experience shows this SVDing to denoise doesn't really help much
+        # S[self.singular_values_to_keep:] = 0
+        # Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
+        # Smat[:len(S),:len(S)] = np.diag(S)
+        # self.smoothDP = U @ Smat  @ VT #our experience shows this SVDing to denoise doesn't really help much
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS)
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
@@ -483,16 +483,15 @@ class FlipCal:
         if internalDataMarker:
             print('casting fit results into attributes RO_fit_params, RBC2MEM, and RBC2MEMavg...')
             self.RO_fit_params = RO_fit_params
-            self.RBC2MEMsig = RO_fit_params[0,0,:]/RO_fit_params[1,0,:]
-            self.Mrbc , self.Mmem, self.RBC2MEMmag = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:])
-            self.RBC2MEMmag_avg = np.mean(self.RBC2MEMmag[self.scanParameters['nSkip']:])
-            self.calcWiggleAmp()
+            self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
+            _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
+            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
         else:
             print('Returning Values')
             self.results = RO_fit_params
             return RO_fit_params
     
-    def kappa(offset):
+    def kappa(self,offset):
         '''This kappa is specifically for a 670 us excitation pulse, fyi'''
         return 1 - offset**2*3.786933e-7 + offset**4*5.225874e-14 - offset**6*2.961329e-21
     
@@ -502,18 +501,18 @@ class FlipCal:
         Mrbc = Srbc/np.sin(self.kappa(wrbc)*np.pi / 9)
         Mmem = Smem/np.sin(self.kappa(wmem)*np.pi / 9)
         RBC2MEMmag = Mrbc/Mmem
-        RBC2MEMdix = RBC2MEMmag/sin(np.pi/9*self.kappa(wmem-wrbc))
+        RBC2MEMdix = RBC2MEMmag/np.sin(np.pi/9*self.kappa(wmem-wrbc))
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
 
-    def calcWiggleAmp(self): 
+    def calcWiggleAmp(self,wiggles): 
         def hilbert(S):
             F = np.fft.fftshift(np.fft.fft(S))
             F[:int(len(S)/2 + 1)] = 0
             H = np.fft.ifft(np.fft.fftshift(F))
             return H
         try:
-            hilb = hilbert(self.RBC2MEMmag[self.scanParameters['nSkip']:])
-            self.RBC2MEMamp = 2*np.mean(np.abs(hilb)) # times 2 for Pk-pk
+            hilb = hilbert(wiggles)
+            return 2*np.mean(np.abs(hilb)) # times 2 for Pk-pk
         except:
             print('You gotta run fit_all_DP_FIDs() first...')
     
