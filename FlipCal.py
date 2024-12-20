@@ -425,8 +425,13 @@ class FlipCal:
         lbounds = np.array([[0,-300,-180,0,0],[0,-1200,-180,0,0],[0,-10000,-180,0,0]])
         ubounds = np.array([[1,400,180,1000,1],[1,-300,180,1000,400],[1,-5000,180,100,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
-        diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
-        de = np.reshape(diffev.x,(3,5))
+        for fit_iteration in range(5):
+            diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
+            de = np.reshape(diffev.x,(3,5))
+            if (de[0,1] > -300) and (de[0,1] < 400) and (de[1,1] > -1200) and (de[1,1] < -300):
+                break
+            else:
+                print(f"Refitting {fit_iteration}/5.  RBC:{de[0,1]}  MEM:{de[1,1]}")
         
         if(printResult):
             print(f"\033[36m     Area -- Frequency -- Phase -- FWHML -- FWHMG\033[37m")
