@@ -501,7 +501,7 @@ class FlipCal:
         Mrbc = Srbc/np.sin(self.kappa(wrbc)*np.pi / 9)
         Mmem = Smem/np.sin(self.kappa(wmem)*np.pi / 9)
         RBC2MEMmag = Mrbc/Mmem
-        RBC2MEMdix = RBC2MEMmag/np.sin(np.pi/9*self.kappa(wmem-wrbc))
+        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc))
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
 
     def calcWiggleAmp(self,wiggles): 
