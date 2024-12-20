@@ -176,8 +176,7 @@ class FlipCal:
         self.getFlipAngle()
         self.DP_fit_params = self.fit_DP_FID()
         self.RBC2MEMsig = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
-        self.RBC2MEMmag = self.correctRBC2MEM(self.DP_fit_params[0,0],self.DP_fit_params[1,0],self.DP_fit_params[0,1],self.DP_fit_params[1,1])
-        self.RBC2MEMdix = self.RBC2MEMmag/np.sin(np.pi/9*self.kappa(self.DP_fit_params[1,1] - self.DP_fit_params[0,1]))
+        _,_,self.RBC2MEMmag,self.RBC2MEMdix = self.correctRBC2MEM(self.DP_fit_params[0,0],self.DP_fit_params[1,0],self.DP_fit_params[0,1],self.DP_fit_params[1,1])
         deltaPhase = (self.DP_fit_params[0,2] - self.DP_fit_params[1,2])
         deltaPhase = np.mod(np.abs(deltaPhase),180)
         deltaF = abs(self.DP_fit_params[0,1] - self.DP_fit_params[1,1])
@@ -188,14 +187,15 @@ class FlipCal:
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
             self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
-            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\n\033[37m")
+            print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\n\033[37m")
+            print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\n\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\n\033[37m")
-            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\n\033[37m")
         except:
             print('RBC2MEM not not in attributes. Need to run fit_all_DP_FIDs() method to get wiggles.')
-            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMmag} from SVD \n\033[37m")
+            print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD \n\033[37m")
+            print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD \n\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD\n\033[37m")
-            print(f"\033[33mThe RBC/MEM signal ratio was {self.RBC2MEMsig} from SVD \n\033[37m")
+
 
         
         self.processDate = datetime.date.today().strftime("%y%m%d")
@@ -433,8 +433,8 @@ class FlipCal:
             print(f"\033[36mRBC:\033[37m {np.round(de[0,0]/de[1,0],3)} -- {np.round(de[0,1],0)} -- {np.round(de[0,2],1)} -- {np.round(de[0,3],1)} -- {np.round(de[0,4],1)}")
             print(f"\033[36mMEM:\033[37m {np.round(de[1,0]/de[1,0],3)} -- {np.round(de[1,1],0)} -- {np.round(de[1,2],1)} -- {np.round(de[1,3],1)} -- {np.round(de[1,4],1)}")
             print(f"\033[36mGAS:\033[37m {np.round(de[2,0]/de[1,0],3)} -- {np.round(de[2,1],0)} -- {np.round(de[2,2],1)} -- {np.round(de[2,3],1)} -- {np.round(de[2,4],1)}")
-            _,_,RBC2MEMm = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
-            print(f"\033[36mRBC2MEM ratio = {RBC2MEMm}")
+            _,_,RBC2MEMmag,RBC2MEMdix = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
+            print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
     
