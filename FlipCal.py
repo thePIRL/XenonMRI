@@ -46,7 +46,8 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '241206_calibration' 
+        self.version = '241230_calibration' 
+        # -- 241230, indication now a patientInfo key
         # -- 241206, RBC2MEM corrected based on excitation profile
         # -- 241115, Now saves plots as dicoms
         # -- 241030, ISMRMRD format now included
@@ -75,6 +76,7 @@ class FlipCal:
                          'LCI': '',
                          '6MWT': '',
                          'DE': '',
+                         'indication'
                          '129XeEnrichment': 0.86}
         self.scanParameters = {
                          'ProtocolName': '',
@@ -195,9 +197,6 @@ class FlipCal:
             print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD \n\033[37m")
             print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD \n\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD\n\033[37m")
-
-
-        
         self.processDate = datetime.date.today().strftime("%y%m%d")
     
     def parseTwix(self):
