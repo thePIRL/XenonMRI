@@ -19,7 +19,8 @@ class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
     And performs all operations to determine our favorite info (gas decay, flip angle, RBC2MEM, etc.).
     INPUTS:
-        Either a TWIX object or path, a .mat file from processing the data at the console, or a FlipCal Pickle file.
+        Either a TWIX object or path, an ISMRMRD file (with consotrium-specified fields populated), 
+        a .mat file from processing the data at the console, or a FlipCal Pickle file.
     ATTRIBUTES: listed below with comments for each one.
     METHODS (that do actual science): 
         SVD(): Performs SVD on the DP data array, and GAS data array and creates attributes
@@ -294,7 +295,7 @@ class FlipCal:
             header_dict = {root.tag.split('}')[-1]: xml_to_dict(root)}  # Remove namespace from root tag
             return header_dict
         self.calibration_dict = parse_ismrmrd_header(root) # from xml bytestring make dictionary
-        # (editor'snote: this is stupidly complicated and requires packages outside ismrmrd)
+        # (editor's note: this is stupidly complicated and requires packages outside ismrmrd)
         self.scanParameters['scanDate'] = self.calibration_dict['ismrmrdHeader']['studyInformation']['studyDate']
         self.patientInfo['PatientName'] = self.calibration_dict['ismrmrdHeader']['subjectInformation']['patientID']
         self.scanParameters['systemVendor'] = self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['systemVendor']
