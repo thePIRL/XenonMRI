@@ -77,7 +77,7 @@ class FlipCal:
                          'LCI': '',
                          '6MWT': '',
                          'DE': '',
-                         'indication'
+                         'indication': '',
                          '129XeEnrichment': 0.86}
         self.scanParameters = {
                          'ProtocolName': '',
