@@ -1051,36 +1051,36 @@ if __name__ == "__main__":
         figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
         return figure_canvas_agg
     def updateData():
-            if 'FA' in globals():
-                try:
-                    window['FAversion'].update(f"Calibration version: {FA.version}")
-                    window['subject'].update(f"Subject: {FA.patientInfo['PatientName']}")
-                    window['date'].update(f"Date: {FA.scanParameters['scanDate']}")
-                    window['gasFrequency'].update(f"Gas Frequency = {FA.scanParameters['GasFrequency']} Hz")
-                    window['dwellTime'].update(f"Dwell Time = {FA.scanParameters['dwellTime']} us")
-                    window['twixprotocol'].update(f"Protocol = {FA.scanParameters['ProtocolName']}")
-                    window['newFrequency'].update(f"New Frequency = {np.round(FA.newGasFrequency,1)} Hz",font=('bold'))
-                    window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} us",font=('bold'))
-                    window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
-                    window['RBC2MEM'].update(f"RBC2MEM = {np.round(FA.RBC2MEMavg_svd,3)} us",font=('bold'))
-                    window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
-                except Exception as e:
-                    print(e)
-    def updateDecay():
-            gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
-            xdata = np.arange(1, len(FA.gasDecay) + 1)
-            plt.figure(figsize=(3,3))
-            plt.plot(xdata, gasDecay_fit_function(xdata, *FA.flipAngleFitParams), 'r', label='Fit',linewidth=0.5)
-            plt.plot(xdata, FA.gasDecay, 'bo', markerfacecolor='b', label='Acquired',markersize=2)
-            plt.text(np.max(xdata)*0.1,np.max(FA.gasDecay)*1.0,f"New Gas Frequency: {np.round(FA.newGasFrequency)} [Hz]",fontsize=8.5)
-            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.95,f"Calculated FA: {np.round(FA.flip_angle,1)}°±{np.round(FA.flip_err,1)}°",fontsize=8.5)
+        if 'FA' in globals():
             try:
-                plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.90,f"New Ref Voltage: {np.round(FA.newVoltage)} [V]",fontsize=8.5)
-            except:
-                plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.90,f"No ref voltage to scale to",fontsize=8.5)
-            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.85,f"TE90: {np.round(FA.TE90,3)} [ms]",fontsize=8.5)
-            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.80,f"RBC2MEM: {np.round(FA.RBC2MEMavg_svd,3)}",fontsize=8.5)
-            draw_figure(window['-GASDECAY-'].TKCanvas,plt.gcf())
+                window['FAversion'].update(f"Calibration version: {FA.version}")
+                window['subject'].update(f"Subject: {FA.patientInfo['PatientName']}")
+                window['date'].update(f"Date: {FA.scanParameters['scanDate']}")
+                window['gasFrequency'].update(f"Gas Frequency = {FA.scanParameters['GasFrequency']} Hz")
+                window['dwellTime'].update(f"Dwell Time = {FA.scanParameters['dwellTime']} us")
+                window['twixprotocol'].update(f"Protocol = {FA.scanParameters['ProtocolName']}")
+                window['newFrequency'].update(f"New Frequency = {np.round(FA.newGasFrequency,1)} Hz",font=('bold'))
+                window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} us",font=('bold'))
+                window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
+                window['RBC2MEM'].update(f"RBC2MEM = {np.round(FA.RBC2MEMavg_svd,3)} us",font=('bold'))
+                window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
+            except Exception as e:
+                print(e)
+    def updateDecay():
+        gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
+        xdata = np.arange(1, len(FA.gasDecay) + 1)
+        plt.figure(figsize=(3,3))
+        plt.plot(xdata, gasDecay_fit_function(xdata, *FA.flipAngleFitParams), 'r', label='Fit',linewidth=0.5)
+        plt.plot(xdata, FA.gasDecay, 'bo', markerfacecolor='b', label='Acquired',markersize=2)
+        plt.text(np.max(xdata)*0.1,np.max(FA.gasDecay)*1.0,f"New Gas Frequency: {np.round(FA.newGasFrequency)} [Hz]",fontsize=8.5)
+        plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.95,f"Calculated FA: {np.round(FA.flip_angle,1)}°±{np.round(FA.flip_err,1)}°",fontsize=8.5)
+        try:
+            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.90,f"New Ref Voltage: {np.round(FA.newVoltage)} [V]",fontsize=8.5)
+        except:
+            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.90,f"No ref voltage to scale to",fontsize=8.5)
+        plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.85,f"TE90: {np.round(FA.TE90,3)} [ms]",fontsize=8.5)
+        plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.80,f"RBC2MEM: {np.round(FA.RBC2MEMdix,3)}",fontsize=8.5)
+        draw_figure(window['-GASDECAY-'].TKCanvas,plt.gcf())
     def updateDP():
         plt.figure(figsize=(6,2.5))
         w = np.linspace(-0.5,0.5,len(FA.t))/FA.scanParameters['dwellTime']
