@@ -1058,23 +1058,23 @@ if __name__ == "__main__":
         figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
         return figure_canvas_agg
     def updateData():
-            if 'FA' in globals():
-                try:
-                    window['FAversion'].update(f"Calibration version: {FA.version}")
-                    window['subject'].update(f"Subject: {FA.patientInfo['PatientName']}")
-                    window['date'].update(f"Date: {FA.scanParameters['scanDate']}")
-                    window['gasFrequency'].update(f"Gas Frequency = {FA.scanParameters['GasFrequency']} Hz")
-                    window['dwellTime'].update(f"Dwell Time = {FA.scanParameters['dwellTime']} us")
-                    window['twixprotocol'].update(f"Protocol = {FA.scanParameters['ProtocolName']}")
-                    window['newFrequency'].update(f"New Frequency = {np.round(FA.newGasFrequency,1)} Hz",font=('bold'))
-                    window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} V",font=('bold'))
-                    window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
-                    window['RBC2MEMsig'].update(f"RBC2MEM = {np.round(FA.RBC2MEMsig,3)}",font=('bold'))
+        if 'FA' in globals():
+            try:
+                window['FAversion'].update(f"Calibration version: {FA.version}")
+                window['subject'].update(f"Subject: {FA.patientInfo['PatientName']}")
+                window['date'].update(f"Date: {FA.scanParameters['scanDate']}")
+                window['gasFrequency'].update(f"Gas Frequency = {FA.scanParameters['GasFrequency']} Hz")
+                window['dwellTime'].update(f"Dwell Time = {FA.scanParameters['dwellTime']} us")
+                window['twixprotocol'].update(f"Protocol = {FA.scanParameters['ProtocolName']}")
+                window['newFrequency'].update(f"New Frequency = {np.round(FA.newGasFrequency,1)} Hz",font=('bold'))
+                window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} V",font=('bold'))
+                window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
+                window['RBC2MEMsig'].update(f"RBC2MEM = {np.round(FA.RBC2MEMsig,3)}",font=('bold'))
                     window['RBC2MEMmag'].update(f"RBC2MEM = {np.round(FA.RBC2MEMmag,3)}",font=('bold'))
                     window['RBC2MEMdix'].update(f"RBC2MEM = {np.round(FA.RBC2MEMdix,3)}",font=('bold'))
-                    window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
-                except Exception as e:
-                    print(e)
+                window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
+            except Exception as e:
+                print(e)
     def updateDecay():
             gasDecay_fit_function = lambda x, a, b, c: a * np.cos(b) ** (x - 1) + c
             xdata = np.arange(1, len(FA.gasDecay) + 1)
