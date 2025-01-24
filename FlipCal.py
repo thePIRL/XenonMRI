@@ -128,7 +128,12 @@ class FlipCal:
         self.RBC2MEMmag = '' # ------------ vector of RBC/membrane magnetization ratios (signal ratios corrected for off-resonance excitation)
         # -- Attributes Created in process()
         self.TE90 = '' # ---------- Time to 90° difference b/t RBC and MEM
-        self.RBC2MEMavg_svd = '' #  mean RBC/MEM ratio (skipping 100 ROs) from SVD DP vector
+        self.RBC2MEMsig = '' #  RBC2membrane signal ratio (fit of DP svd spectrum)
+        self.RBC2MEMmag = '' #  RBC2membrane magnetization ration (signal ratio corrected by excitation angles)
+        self.RBC2MEMdix = '' #  RBC2membrane ratio which the Dixon acquisition should use (assuming RBC resonance excitation)
+        self.RBC2MEMsig_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
+        self.RBC2MEMmag_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
+        self.RBC2MEMdix_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
         self.RBCppm = '' # -------- Chem shift of RBC peak
         self.MEMppm = '' # -------- Chem shift of MEM peak
         ## -- Was a pickle or a pickle path provided? -- ##
@@ -1034,7 +1039,9 @@ if __name__ == "__main__":
                            [sg.Button('',                      pad=(0,0)),sg.Text('New Frequency:   ',key='newFrequency',pad=(0,0))],
                            [sg.Button('',                      pad=(0,0)),sg.Text('New Voltage:     ',key='newVoltage',  pad=(0,0))],
                            [sg.Button('',                      pad=(0,0)),sg.Text('TE90:            ',key='TE90',        pad=(0,0))],
-                           [sg.Button('',                      pad=(0,0)),sg.Text('RBC2MEM:         ',key='RBC2MEM',     pad=(0,0))],
+                           [sg.Button('',                      pad=(0,0)),sg.Text('RBC2MEMsig:      ',key='RBC2MEMsig',  pad=(0,0))],
+                           [sg.Button('',                      pad=(0,0)),sg.Text('RBC2MEMmag:      ',key='RBC2MEMmag',  pad=(0,0))],
+                           [sg.Button('',                      pad=(0,0)),sg.Text('RBC2MEMdix:      ',key='RBC2MEMdix',  pad=(0,0))],
                            [sg.Button('',key='editDE',         pad=(0,0)),sg.Text('DE:              ',key='DE',          pad=(0,0))]]
     
     windowLayout = [[sg.Text('Calibration File'),sg.InputText(key='filepath',default_text="C:/PIRL/data/Afia/meas_MID00083_FID101502_5_Xe_fid_calibration_dyn.dat",size=(100,1)),sg.Button('Load',key='LoadFile')],
@@ -1060,9 +1067,11 @@ if __name__ == "__main__":
                     window['dwellTime'].update(f"Dwell Time = {FA.scanParameters['dwellTime']} us")
                     window['twixprotocol'].update(f"Protocol = {FA.scanParameters['ProtocolName']}")
                     window['newFrequency'].update(f"New Frequency = {np.round(FA.newGasFrequency,1)} Hz",font=('bold'))
-                    window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} us",font=('bold'))
+                    window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} V",font=('bold'))
                     window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
-                    window['RBC2MEM'].update(f"RBC2MEM = {np.round(FA.RBC2MEMavg_svd,3)} us",font=('bold'))
+                    window['RBC2MEMsig'].update(f"RBC2MEM = {np.round(FA.RBC2MEMsig,3)}",font=('bold'))
+                    window['RBC2MEMmag'].update(f"RBC2MEM = {np.round(FA.RBC2MEMmag,3)}",font=('bold'))
+                    window['RBC2MEMdix'].update(f"RBC2MEM = {np.round(FA.RBC2MEMdix,3)}",font=('bold'))
                     window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
                 except Exception as e:
                     print(e)
@@ -1079,7 +1088,9 @@ if __name__ == "__main__":
             except:
                 plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.90,f"No ref voltage to scale to",fontsize=8.5)
             plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.85,f"TE90: {np.round(FA.TE90,3)} [ms]",fontsize=8.5)
-            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.80,f"RBC2MEM: {np.round(FA.RBC2MEMavg_svd,3)}",fontsize=8.5)
+            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.80,f"RBC2MEMsig: {np.round(FA.RBC2MEMsig,3)}",fontsize=8.5)
+            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.75,f"RBC2MEMmag: {np.round(FA.RBC2MEMmag,3)}",fontsize=8.5)
+            plt.text(np.max(xdata)*0.3,np.max(FA.gasDecay)*0.70,f"RBC2MEMdix: {np.round(FA.RBC2MEMdix,3)}",fontsize=8.5)
             draw_figure(window['-GASDECAY-'].TKCanvas,plt.gcf())
     def updateDP():
         plt.figure(figsize=(6,2.5))
@@ -1161,7 +1172,6 @@ if __name__ == "__main__":
                 print(f"\033[36mSet the Ref Voltage to \033[32m{np.round(FA.newVoltage,0)}\033[37m")
             except:
                 print('No ref voltage')
-            #print(f"\033[36mRBC2MEM is \033[32m{np.round(FA.RBC2MEMavg_svd,3)}\033[37m")
             print(f"\033[36mTE90 is \033[32m{np.round(FA.TE90,3)}\033[37m")
             updateData()
             updateDecay()
