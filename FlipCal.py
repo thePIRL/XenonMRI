@@ -495,7 +495,7 @@ class FlipCal:
             self.RO_fit_params = RO_fit_params
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
-            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
+            self.RBC2MEMmag = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
         else:
             print('Returning Values')
             self.results = RO_fit_params
@@ -1070,8 +1070,8 @@ if __name__ == "__main__":
                 window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} V",font=('bold'))
                 window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
                 window['RBC2MEMsig'].update(f"RBC2MEM = {np.round(FA.RBC2MEMsig,3)}",font=('bold'))
-                    window['RBC2MEMmag'].update(f"RBC2MEM = {np.round(FA.RBC2MEMmag,3)}",font=('bold'))
-                    window['RBC2MEMdix'].update(f"RBC2MEM = {np.round(FA.RBC2MEMdix,3)}",font=('bold'))
+                window['RBC2MEMmag'].update(f"RBC2MEM = {np.round(FA.RBC2MEMmag,3)}",font=('bold'))
+                window['RBC2MEMdix'].update(f"RBC2MEM = {np.round(FA.RBC2MEMdix,3)}",font=('bold'))
                 window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
             except Exception as e:
                 print(e)
@@ -1129,14 +1129,18 @@ if __name__ == "__main__":
     def updateWiggles():
         plt.figure(figsize=(6,2.5))
         plt.hlines(y=np.arange(0,1,0.1),xmin=np.repeat(0,10),xmax=np.repeat(10,10),color = (0.8,0.8,0.8),linestyle='dashed',linewidth=0.5)
-        plt.plot(np.linspace(100*int(FA.scanParameters['TR'])*1e-6,int(FA.scanParameters['TR'])*len(FA.RBC2MEM)*1e-6,len(FA.RBC2MEM[100:])), FA.RBC2MEM[100:])
+        plt.plot(np.linspace(100*int(FA.scanParameters['TR'])*1e-6,int(FA.scanParameters['TR'])*len(FA.RBC2MEMsig_wiggles)*1e-6,len(FA.RBC2MEMsig_wiggles[100:])), FA.RBC2MEMsig_wiggles[100:])
+        plt.plot(np.linspace(100*int(FA.scanParameters['TR'])*1e-6,int(FA.scanParameters['TR'])*len(FA.RBC2MEMmag_wiggles)*1e-6,len(FA.RBC2MEMmag_wiggles[100:])), FA.RBC2MEMmag_wiggles[100:])
+        plt.plot(np.linspace(100*int(FA.scanParameters['TR'])*1e-6,int(FA.scanParameters['TR'])*len(FA.RBC2MEMdix_wiggles)*1e-6,len(FA.RBC2MEMdix_wiggles[100:])), FA.RBC2MEMdix_wiggles[100:])
         plt.ylim([0,1])
-        plt.xlim([100*int(FA.scanParameters['TR'])*1e-6,len(FA.RBC2MEM)*int(FA.scanParameters['TR'])*1e-6])
+        plt.xlim([100*int(FA.scanParameters['TR'])*1e-6,len(FA.RBC2MEMsig_wiggles)*int(FA.scanParameters['TR'])*1e-6])
         plt.title(f"RBC/MEM vs Time")
-        plt.text(2,0.9,f"RBC/MEM mean = {np.round(np.mean(FA.RBC2MEM[100:]),3)}",fontsize=12)
-        plt.text(2,0.82,f"RBC/MEM amp = {np.round(FA.RBC2MEMamp,3)} = {np.round(200*FA.RBC2MEMamp/np.mean(FA.RBC2MEM[100:]),2)} %",fontsize=12)
+        plt.text(2,0.90,f"RBC/MEMsig mean = {np.round(np.mean(FA.RBC2MEMsig_wiggles[100:]),3)}",fontsize=12)
+        plt.text(2,0.82,f"RBC/MEMmag mean = {np.round(np.mean(FA.RBC2MEMmag_wiggles[100:]),3)}",fontsize=12)
+        plt.text(2,0.74,f"RBC/MEMdix mean = {np.round(np.mean(FA.RBC2MEMdix_wiggles[100:]),3)}",fontsize=12)
+        #plt.text(2,0.66,f"RBC/MEM magnitude amp = {np.round(FA.RBC2MEMmag_amp,3)} = {np.round(200*FA.RBC2MEMmag_amp/np.mean(FA.RBC2MEMmag[100:]),2)} %",fontsize=12)
         draw_figure(window['-WIGGLES-'].TKCanvas,plt.gcf())
-    
+
     while True:
         event, values = window.read()
         #print("")
