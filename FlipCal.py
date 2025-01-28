@@ -47,7 +47,7 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '241230_calibration' 
+        self.version = '250128_calibration' 
         # -- 241230, indication now a patientInfo key
         # -- 241206, RBC2MEM corrected based on excitation profile
         # -- 241115, Now saves plots as dicoms
@@ -1012,7 +1012,7 @@ class FlipCal:
 ### -----------------------------------------Main GUI Script -----------------------------------####
 ### --------------------------------------------------------------------------------------------####
 if __name__ == "__main__":
-    version = '241030_calibrationGUI'
+    version = '250128_calibrationGUI'
     image_box_size = 50
     ARCHIVE_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/Archive/'
     import PySimpleGUI as sg
