@@ -1069,9 +1069,9 @@ if __name__ == "__main__":
                 window['newFrequency'].update(f"New Frequency = {np.round(FA.newGasFrequency,1)} Hz",font=('bold'))
                 window['newVoltage'].update(f"New Voltage = {np.round(FA.newVoltage,1)} V",font=('bold'))
                 window['TE90'].update(f"TE90 = {np.round(FA.TE90,3)} us",font=('bold'))
-                window['RBC2MEMsig'].update(f"RBC2MEM = {np.round(FA.RBC2MEMsig,3)}",font=('bold'))
-                window['RBC2MEMmag'].update(f"RBC2MEM = {np.round(FA.RBC2MEMmag,3)}",font=('bold'))
-                window['RBC2MEMdix'].update(f"RBC2MEM = {np.round(FA.RBC2MEMdix,3)}",font=('bold'))
+                window['RBC2MEMsig'].update(f"RBC2MEMsig = {np.round(FA.RBC2MEMsig,3)}",font=('bold'))
+                window['RBC2MEMmag'].update(f"RBC2MEMmag = {np.round(FA.RBC2MEMmag,3)}",font=('bold'))
+                window['RBC2MEMdix'].update(f"RBC2MEMdix = {np.round(FA.RBC2MEMdix,3)}",font=('bold'))
                 window['DE'].update(f"DE = {FA.patientInfo['DE']} mL",font=('bold'))
             except Exception as e:
                 print(e)
