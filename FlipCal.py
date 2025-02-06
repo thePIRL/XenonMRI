@@ -195,7 +195,7 @@ class FlipCal:
         try:
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
-            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
+            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles[100:])
             print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\n\033[37m")
             print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\n\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\n\033[37m")
@@ -689,12 +689,16 @@ class FlipCal:
         try:
             axb.set_title('Wiggles')
             axb.hlines(y=np.arange(0,1,0.1),xmin=np.repeat(0,10),xmax=np.repeat(10,10),color = (0.8,0.8,0.8),linestyle='dashed',linewidth=0.5)
-            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEM[100:])), self.RBC2MEM[100:])
+            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEMsig_wiggles[100:])), self.RBC2MEMsig_wiggles[100:])
+            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEMmag_wiggles[100:])), self.RBC2MEMmag_wiggles[100:])
+            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEMdix_wiggles[100:])), self.RBC2MEMdix_wiggles[100:])
             axb.set_ylim([0,1])
             axb.set_xlim([100*int(self.scanParameters['TR'])*1e-6,len(self.RBC2MEM)*int(self.scanParameters['TR'])*1e-6])
             axb.set_title(f"RBC/MEM vs Time")
-            axb.text(2,0.9,f"RBC/MEM mean = {np.round(np.mean(self.RBC2MEM[100:]),3)}",fontsize=12)
-            axb.text(2,0.82,f"RBC/MEM amp = {np.round(self.RBC2MEMamp,3)} = {np.round(200*self.RBC2MEMamp/np.mean(self.RBC2MEM[100:]),2)} %",fontsize=12)
+            axb.text(2,0.95,f"RBC/MEM signal = {np.round(np.mean(self.RBC2MEMsig_wiggles[100:]),3)}",fontsize=11)
+            axb.text(2,0.90,f"RBC/MEM magnitude = {np.round(np.mean(self.RBC2MEMmag_wiggles[100:]),3)}",fontsize=11)
+            axb.text(2,0.85,f"RBC/MEM dixon = {np.round(np.mean(self.RBC2MEMdix_wiggles[100:]),3)}",fontsize=11)
+            axb.text(2,0.80,f"RBC/MEM amp = {np.round(self.RBC2MEMmag_amp,3)} = {np.round(200*self.RBC2MEMmag_amp/self.RBC2MEMmag,2)} %",fontsize=12)
         except:
             print(f"No Wiggles to print")
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
