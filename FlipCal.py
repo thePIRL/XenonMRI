@@ -136,6 +136,7 @@ class FlipCal:
         self.RBC2MEMdix_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
         self.RBCppm = '' # -------- Chem shift of RBC peak
         self.MEMppm = '' # -------- Chem shift of MEM peak
+        self.RBC2MEMmag_amp = '' # -The magnetization wiggle amplitude 
         ## -- Was a pickle or a pickle path provided? -- ##
         if pickle_path is not None:
             #print(f'\n \033[35m # ------ Pickle path provided: {pickle_path}. ------ #\033[37m')
