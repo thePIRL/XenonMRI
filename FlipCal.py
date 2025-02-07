@@ -502,9 +502,13 @@ class FlipCal:
             self.results = RO_fit_params
             return RO_fit_params
     
-    def kappa(self,offset):
-        '''This kappa is specifically for a 670 us excitation pulse, fyi'''
-        return 1 - offset**2*3.786933e-7 + offset**4*5.225874e-14 - offset**6*2.961329e-21
+    def kappa(self,offset, T = 670):
+        '''These values were found by fitting the Fourier profile of single-lobe sincs of 650-710 us'''
+        cof2 =  3.670494e-07 + (-1.111397e-09) * T
+        cof4 = -1.463126e-13 +  (2.950045e-16) * T
+        cof6 =  1.200488e-20 + (-2.204393e-23) * T
+        return 1 + cof2 * offset**2 + cof4 * offset**4 + cof6 * offset**6
+
     
     def correctRBC2MEM(self,Srbc,Smem,wrbc,wmem): 
         '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetizations and ratio
