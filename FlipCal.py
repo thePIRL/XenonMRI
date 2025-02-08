@@ -47,7 +47,7 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '250128_calibration' 
+        self.version = '250208_calibration' 
         # -- 241230, indication now a patientInfo key
         # -- 241206, RBC2MEM corrected based on excitation profile
         # -- 241115, Now saves plots as dicoms
