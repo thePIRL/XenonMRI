@@ -181,6 +181,7 @@ class FlipCal:
     def process(self):
         '''This does the entire Calibration processing pipeline /except/ the wiggles'''
         self.SVD()
+        self.RMSnoise = np.std(np.concatenate((self.noise.real,self.noise.imag)))
         self.gas_fit_params, self.newGasFrequency = self.fit_GAS_FID()
         self.getFlipAngle()
         self.DP_fit_params = self.fit_DP_FID()
