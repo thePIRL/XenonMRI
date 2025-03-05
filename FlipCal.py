@@ -431,11 +431,13 @@ class FlipCal:
         
         lbounds = np.array([[0,-300,-180,0,0],[0,-1200,-180,0,0],[0,-10000,-180,0,0]])
         ubounds = np.array([[1,400,180,1000,1],[1,-300,180,1000,400],[1,-5000,180,100,1]])
+        lbounds = np.array([[0,0,-180,0   ,0],   [0,-700,-180 ,0   ,0]  ,[0,-10000,-180,0,0]])
+        ubounds = np.array([[1,700 ,180 ,1000,1],[1,0   , 180 ,1000,400],[1,-5000,180,100,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
         for fit_iteration in range(5):
             diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
             de = np.reshape(diffev.x,(3,5))
-            if (de[0,1] > -300) and (de[0,1] < 400) and (de[1,1] > -1200) and (de[1,1] < -300):
+            if (de[0,1] > 0) and (de[0,1] < 700) and (de[1,1] > -700) and (de[1,1] < 0):
                 break
             else:
                 print(f"Refitting {fit_iteration}/5.  RBC:{de[0,1]}  MEM:{de[1,1]}")
@@ -517,7 +519,7 @@ class FlipCal:
         Mrbc = Srbc/np.sin(self.kappa(wrbc)*np.pi / 9)
         Mmem = Smem/np.sin(self.kappa(wmem)*np.pi / 9)
         RBC2MEMmag = Mrbc/Mmem
-        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc))
+        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc,T=710))
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
 
     def calcWiggleAmp(self,wiggles): 
@@ -694,16 +696,16 @@ class FlipCal:
         try:
             axb.set_title('Wiggles')
             axb.hlines(y=np.arange(0,1,0.1),xmin=np.repeat(0,10),xmax=np.repeat(10,10),color = (0.8,0.8,0.8),linestyle='dashed',linewidth=0.5)
-            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEMsig_wiggles[100:])), self.RBC2MEMsig_wiggles[100:])
-            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEMmag_wiggles[100:])), self.RBC2MEMmag_wiggles[100:])
-            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEM)*1e-6,len(self.RBC2MEMdix_wiggles[100:])), self.RBC2MEMdix_wiggles[100:])
+            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEMsig_wiggles)*1e-6,len(self.RBC2MEMsig_wiggles[100:])), self.RBC2MEMsig_wiggles[100:],color='#0000ff')
+            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEMmag_wiggles)*1e-6,len(self.RBC2MEMmag_wiggles[100:])), self.RBC2MEMmag_wiggles[100:],color='#ff0000')
+            # axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEMdix_wiggles)*1e-6,len(self.RBC2MEMdix_wiggles[100:])), self.RBC2MEMdix_wiggles[100:],color='#00ff00')
             axb.set_ylim([0,1])
-            axb.set_xlim([100*int(self.scanParameters['TR'])*1e-6,len(self.RBC2MEM)*int(self.scanParameters['TR'])*1e-6])
+            axb.set_xlim([100*int(self.scanParameters['TR'])*1e-6,len(self.RBC2MEMmag_wiggles)*int(self.scanParameters['TR'])*1e-6])
             axb.set_title(f"RBC/MEM vs Time")
-            axb.text(2,0.95,f"RBC/MEM signal = {np.round(np.mean(self.RBC2MEMsig_wiggles[100:]),3)}",fontsize=11)
-            axb.text(2,0.90,f"RBC/MEM magnitude = {np.round(np.mean(self.RBC2MEMmag_wiggles[100:]),3)}",fontsize=11)
-            axb.text(2,0.85,f"RBC/MEM dixon = {np.round(np.mean(self.RBC2MEMdix_wiggles[100:]),3)}",fontsize=11)
-            axb.text(2,0.80,f"RBC/MEM amp = {np.round(self.RBC2MEMmag_amp,3)} = {np.round(200*self.RBC2MEMmag_amp/self.RBC2MEMmag,2)} %",fontsize=12)
+            axb.text(2,0.95,f"RBC/MEM signal = {np.round(np.mean(self.RBC2MEMsig_wiggles[100:]),3)}",fontsize=11,color='#0000ff')
+            axb.text(2,0.90,f"RBC/MEM magnitude = {np.round(np.mean(self.RBC2MEMmag_wiggles[100:]),3)}",fontsize=11,color='#ff0000')
+            # axb.text(2,0.85,f"RBC/MEM dixon = {np.round(np.mean(self.RBC2MEMdix_wiggles[100:]),3)}",fontsize=11,color='#00ff00')
+            # axb.text(2,0.80,f"RBC/MEM amp = {np.round(self.RBC2MEMmag_amp,3)} = {np.round(200*self.RBC2MEMmag_amp/self.RBC2MEMmag,2)} %",fontsize=12)
         except:
             print(f"No Wiggles to print")
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
