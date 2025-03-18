@@ -13,7 +13,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg # GUI stuff - pr
 import ismrmrd # ---------------------------------- For importing/exporting ISMRMRD formats - exportISMRMRD() and parseISMRMRD()
 import json # ------------------------------------- For exporting Twix Header
 import xml.etree.ElementTree as ET # -------------- To parse ISMRMRD header - parseISMRMRD()
-import pydicom as dicom # ---------------------------------- For saving plots as dicoms - 
+import pydicom # ---------------------------------- For saving plots as dicoms - 
+from pydicom.dataset import Dataset
 
 class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
@@ -534,7 +535,7 @@ class FlipCal:
         except:
             print('You gotta run fit_all_DP_FIDs() first...')
     
-    ## -- Plot Draw Functions -- ##
+    ## ------ Plot Draw Functions ------ ##
     def draw_GAS_phasor(self,ax4):
         gasPhasor_nTE = self.FIDFitfunction(-435e-6,*self.gas_fit_params)
         gasPhasor_0 = self.FIDFitfunction(-435e-6,*self.gas_fit_params)
@@ -794,10 +795,13 @@ class FlipCal:
         plt.savefig(save_path)
         print(f"\033[36mPrintout saved to \033[33m{save_path}\033[37m")
     
-    def dicomPrintout(self,save_path = 'c:/pirl/data/dicomoutput.dcm'):
+    def dicomPrintout(self,dummy_dicom_path = None,save_path = 'c:/pirl/data/'):
         '''Creates a 3D DICOM file (enhanced) where each image is a matplotlib pyplot.
         For each plot we want to dicomize, we create a plot then convert to numpy array.
         Then each array is stacked and a DICOM file is created (need to try this on PACS)'''
+        if dummy_dicom_path is None:
+            print("Argument 'dummy_dicom_path' is not specified for dicomPrintout(), aborting DICOM printout")
+            return
         # -- 1 - Gas Decay and Flip Angle
         fig_size = (7,4)
         fig, axa = plt.subplots(figsize = fig_size)
@@ -856,33 +860,79 @@ class FlipCal:
             image_data = np.stack((GAS_Decay_Fit,GAS_FID_fig,GAS_SPECTRUM_fig,DP_FID,DP_FID_FIT,DP_SPECTRA_FIT,WIGGLES),axis=0)
         except:
             print(f"Array Shapes don't match for DICOM export for some reason...")
+        # Load the template DICOM file
+        template_dicom = pydicom.dcmread(dummy_dicom_path)
+        # Extract patient and scan metadata
+        def copy_metadata(src_dcm):
+            new_dcm = Dataset()
+            for elem in src_dcm.iterall():
+                if elem.tag not in [0x7FE00010]:  # Exclude Pixel Data
+                    new_dcm.add(elem)
+            return new_dcm
+        # Ensure output folder exists
+        os.makedirs(save_path, exist_ok=True)
+        # Generate a single SeriesInstanceUID to ensure all images stay in the same series
+        shared_series_uid = pydicom.uid.generate_uid()
+        for image_set_index in range(image_data.shape[0]):
+            pixel_array = np.array(image_data[image_set_index,:,:,:], dtype=np.uint8)
+            dicom_file = copy_metadata(template_dicom)
+            # Assign unique values
+            dicom_file.SOPInstanceUID = pydicom.uid.generate_uid()  # Unique for each image
+            dicom_file.InstanceNumber = image_set_index+1 # Order the pages correctly
+            # Keep these the same for all pages
+            dicom_file.StudyInstanceUID = template_dicom.StudyInstanceUID  # Same study
+            dicom_file.SeriesInstanceUID = shared_series_uid  # Same series for all pages
+            dicom_file.SeriesNumber = 999  # Consistent series number
+            dicom_file.SeriesDescription = f"FlipCal_{self.patientInfo['PatientName']}"  # Custom label
+            dicom_file.ImageType = ["DERIVED", "SECONDARY"]
+            dicom_file.ContentDate = datetime.datetime.now().strftime("%Y%m%d")
+            dicom_file.ContentTime = datetime.datetime.now().strftime("%H%M%S")
+            dicom_file.Manufacturer = "MU PIRL version 250312"
+            dicom_file.SOPClassUID = pydicom.uid.SecondaryCaptureImageStorage
+            # Set DICOM image properties for color
+            dicom_file.Rows, dicom_file.Columns, _ = pixel_array.shape
+            dicom_file.PhotometricInterpretation = "RGB"
+            dicom_file.SamplesPerPixel = 3
+            dicom_file.PlanarConfiguration = 0  # RGB pixel arrangement
+            dicom_file.BitsAllocated = 8
+            dicom_file.BitsStored = 8
+            dicom_file.HighBit = 7
+            dicom_file.PixelRepresentation = 0
+            dicom_file.PixelData = pixel_array.tobytes()
+            # Set transfer syntax properties
+            dicom_file.is_little_endian = template_dicom.is_little_endian
+            dicom_file.is_implicit_VR = template_dicom.is_implicit_VR
+            # Save the new DICOM file
+            output_path = os.path.join(save_path, f"FlipCal_{image_set_index:03d}.dcm")
+            dicom_file.save_as(output_path)
+            print(f"Saved: {output_path}")
         # - Create and save a dicom - #
-        file_meta = dicom.dataset.FileMetaDataset()
-        file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
-        file_meta.MediaStorageSOPInstanceUID = dicom.uid.generate_uid()
-        file_meta.ImplementationClassUID = dicom.uid.generate_uid()
-        ds = dicom.dataset.FileDataset("output.dcm", {}, file_meta=file_meta, preamble=b"\0" * 128)
-        ds.PatientName = self.patientInfo['PatientName']
-        ds.PatientID = self.patientInfo['PatientID']
-        ds.StudyInstanceUID = dicom.uid.generate_uid()
-        ds.SeriesInstanceUID = dicom.uid.generate_uid()
-        ds.SOPInstanceUID = dicom.uid.generate_uid()
-        ds.Modality = "MR"
-        ds.StudyDate = datetime.datetime.now().strftime("%Y%m%d")
-        ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
-        ds.Manufacturer = self.scanParameters['systemVendor']
-        # Image data specifics for RGB
-        ds.NumberOfFrames, ds.Rows, ds.Columns, _ = image_data.shape
-        ds.SamplesPerPixel = 3  # RGB
-        ds.PhotometricInterpretation = "RGB"
-        ds.PlanarConfiguration = 0  # 0: RGBRGB... (interleaved), 1: RRR...GGG...BBB...
-        ds.BitsAllocated = 8  # 8 bits per channel
-        ds.BitsStored = 8
-        ds.HighBit = 7
-        ds.PixelRepresentation = 0  # Unsigned integer
-        ds.PixelData = image_data.tobytes()
-        # Save to file
-        ds.save_as(save_path)
+        # file_meta = dicom.dataset.FileMetaDataset()
+        # file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
+        # file_meta.MediaStorageSOPInstanceUID = dicom.uid.generate_uid()
+        # file_meta.ImplementationClassUID = dicom.uid.generate_uid()
+        # ds = dicom.dataset.FileDataset("output.dcm", {}, file_meta=file_meta, preamble=b"\0" * 128)
+        # ds.PatientName = self.patientInfo['PatientName']
+        # ds.PatientID = self.patientInfo['PatientID']
+        # ds.StudyInstanceUID = dicom.uid.generate_uid()
+        # ds.SeriesInstanceUID = dicom.uid.generate_uid()
+        # ds.SOPInstanceUID = dicom.uid.generate_uid()
+        # ds.Modality = "MR"
+        # ds.StudyDate = datetime.datetime.now().strftime("%Y%m%d")
+        # ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
+        # ds.Manufacturer = self.scanParameters['systemVendor']
+        # # Image data specifics for RGB
+        # ds.NumberOfFrames, ds.Rows, ds.Columns, _ = image_data.shape
+        # ds.SamplesPerPixel = 3  # RGB
+        # ds.PhotometricInterpretation = "RGB"
+        # ds.PlanarConfiguration = 0  # 0: RGBRGB... (interleaved), 1: RRR...GGG...BBB...
+        # ds.BitsAllocated = 8  # 8 bits per channel
+        # ds.BitsStored = 8
+        # ds.HighBit = 7
+        # ds.PixelRepresentation = 0  # Unsigned integer
+        # ds.PixelData = image_data.tobytes()
+        # # Save to file
+        # ds.save_as(save_path)
     
     def pickleMe(self, pickle_path='C:/PIRL/data/FlipCalPickle.pkl'):
         '''Uses dictionary comprehension to create a dictionary of all class attributes, then saves as pickle'''
@@ -1016,8 +1066,10 @@ class FlipCal:
                 string += (f'\033[32m {attr}: \033[36m{value} \033[37m\n')
         return string
 
-
-
+# FA = FlipCal(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/XeClinical/ClinicalPatient0028 - KED - 250317/FlipCal_Duff, Kenneth E_20250317/Duff, Kenneth E_20250317.pkl")
+# FA.dicomPrintout(
+#     #dummy_dicom_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/XeClinical/ClinicalPatient0028 - KED - 250317/Pre-albuterol/DICOM/25031722/19140000/13003175_xePRE",
+#     save_path = "C:/PIRL/data/test_patient")
 
 
 ### --------------------------------------------------------------------------------------------####
@@ -1061,6 +1113,7 @@ if __name__ == "__main__":
                    [sg.Column(patient_data_column),sg.Canvas(key='-GASDECAY-'),sg.Canvas(key='-DPPLOT-')],
                    [sg.Canvas(key='-WIGGLES-')],
                    [sg.Button('Process FlipCal',key='process'),sg.Button('Process Wiggles',key='wiggles')],
+                   [sg.Text('Dummy Dicom Path'),sg.InputText(key='dummy_dicom_path',size=(100,1))],
                    [sg.Text('Save Directory'),sg.InputText(key='SAVEpath',default_text='C:/PIRL/data/FA/',size=(100,1)),sg.Button('Save',key='savedata')]]
     
     window = sg.Window(f'PIRL FlipCal Analysis -- {version}', windowLayout, return_keyboard_events=True, margins=(0, 0), finalize=True, size= (1000,550),resizable=True)
@@ -1163,13 +1216,13 @@ if __name__ == "__main__":
 ## --------------- LOAD FILE --------------------------- ##
         elif event == ('LoadFile'):
             if values['twixfile'] == True:
-                FA = FlipCal(twix_path=values['filepath'])
+                FA = FlipCal(twix_path=values['filepath'].replace('"',''))
             elif values['picklefile'] == True:
-                FA = FlipCal(pickle_path=values['filepath'])
+                FA = FlipCal(pickle_path=values['filepath'].replace('"',''))
             elif values['matlabfile'] == True:
-                FA = FlipCal(matlab_path=values['filepath'])
+                FA = FlipCal(matlab_path=values['filepath'].replace('"',''))
             elif values['ismrmrdfile'] == True:
-                FA = FlipCal(ismrmrd_path=values['filepath'])
+                FA = FlipCal(ismrmrd_path=values['filepath'].replace('"',''))
             else:
                 print('No radio button selected?...')
             try:
@@ -1201,21 +1254,22 @@ if __name__ == "__main__":
                 updateWiggles()
 ## --------------- SAVE PICKLE BUTTON --------------------------- ##
         elif event == ('savedata'):
-            SAVEpath = os.path.join(values['SAVEpath'],f"FlipCal_{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}/")
+            SAVEpath = os.path.join(values['SAVEpath'].replace('"',''),f"FlipCal_{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}/")
             if not os.path.isdir(SAVEpath):
                 os.makedirs(SAVEpath)
             try:
                 FA.pickleMe(pickle_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.pkl"))
             except:
-                print('Could not pickle the FlipCal')    
+                print('Pickle save failed at GUI level')    
             try:
                 FA.printout(save_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.png"))
             except:
-                print('Could not save the printout')    
+                print('Printout save failed at GUI level')    
             try:
-                FA.dicomPrintout(save_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.dcm"))
+                dummy_dicom_path = values['dummy_dicom_path'].replace('"','')
+                FA.dicomPrintout(dummy_dicom_path= dummy_dicom_path,save_path=os.path.join(SAVEpath,f"FlipCal_DICOMS"))
             except:
-                print('Could not save the Dicom')    
+                print('DICOM save failed at GUI level')    
 ## --------------- Info Edit Buttons ------------------- ##
         elif event == ('editPatientName'):
             text = sg.popup_get_text('Enter Subject ID: ',default_text=FA.patientInfo['PatientName'])
