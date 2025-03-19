@@ -1066,10 +1066,6 @@ class FlipCal:
                 string += (f'\033[32m {attr}: \033[36m{value} \033[37m\n')
         return string
 
-# FA = FlipCal(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/XeClinical/ClinicalPatient0028 - KED - 250317/FlipCal_Duff, Kenneth E_20250317/Duff, Kenneth E_20250317.pkl")
-# FA.dicomPrintout(
-#     #dummy_dicom_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/XeClinical/ClinicalPatient0028 - KED - 250317/Pre-albuterol/DICOM/25031722/19140000/13003175_xePRE",
-#     save_path = "C:/PIRL/data/test_patient")
 
 
 ### --------------------------------------------------------------------------------------------####
