@@ -506,13 +506,10 @@ class FlipCal:
             self.results = RO_fit_params
             return RO_fit_params
     
-    def kappa(self,offset, T = 670):
-        '''These values were found by fitting the Fourier profile of single-lobe sincs of 650-710 us'''
-        cof2 =  3.670494e-07 + (-1.111397e-09) * T
-        cof4 = -1.463126e-13 +  (2.950045e-16) * T
-        cof6 =  1.200488e-20 + (-2.204393e-23) * T
-        return 1 + cof2 * offset**2 + cof4 * offset**4 + cof6 * offset**6
-
+    def kappa(self,w, T = 670*1e-6):
+        '''You give me your pulse time T, and resonance-offset frequency w, and I'll
+        tell you what the relative amplitude of B1 you got.'''
+        return (2 / T) * np.sin(w * T / 2) * (1/w - w / (w**2 - (2 * np.pi / T)**2))
     
     def correctRBC2MEM(self,Srbc,Smem,wrbc,wmem): 
         '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetizations and ratio
@@ -520,7 +517,7 @@ class FlipCal:
         Mrbc = Srbc/np.sin(self.kappa(wrbc)*np.pi / 9)
         Mmem = Smem/np.sin(self.kappa(wmem)*np.pi / 9)
         RBC2MEMmag = Mrbc/Mmem
-        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc,T=710))
+        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc,T=710*1e-6))
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
 
     def calcWiggleAmp(self,wiggles): 
