@@ -507,9 +507,10 @@ class FlipCal:
             return RO_fit_params
     
     def kappa(self,w, T = 670*1e-6):
-        '''You give me your pulse time T, and resonance-offset frequency w, and I'll
+        '''You give me your pulse time T, and resonance-offset frequency w in Hz, and I'll
         tell you what the relative amplitude of B1 you got.'''
-        return (2 / T) * np.sin(w * T / 2) * (1/w - w / (w**2 - (2 * np.pi / T)**2))
+        f = w*2*np.pi
+        return (2 / T) * np.sin(f * T / 2) * (1/f - f / (f**2 - (2 * np.pi / T)**2))
     
     def correctRBC2MEM(self,Srbc,Smem,wrbc,wmem): 
         '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetizations and ratio
