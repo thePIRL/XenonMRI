@@ -226,14 +226,16 @@ class FlipCal:
         self.scanParameters['systemVendor'] = self.twix.hdr.Dicom.Manufacturer
         self.scanParameters['scannerSoftwareVersion'] = self.twix.hdr.Dicom.SoftwareVersions
         self.scanParameters['institutionName'] = self.twix.hdr.Dicom.InstitutionName
-        self.scanParameters['B0fieldStrength'] = self.twix.hdr.Dicom.flMagneticFieldStrength
+        self.scanParameters['B0fieldStrength'] = self.twix.hdr.Meas['flNominalB0']
         self.scanParameters['FlipAngle'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[0])
+        self.scanParameters['FlipAngle_DP'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[1])
+        self.scanParameters['XenonLarmorFrequency'] = float(self.twix.hdr.Meas["alLarmorConstant"].split(" ")[0])
         self.scanParameters['ProtocolName'] = self.twix.hdr.Config['SequenceDescription']# Also in Meas
         self.scanParameters['referenceAmplitude'] = self.twix.hdr.Dicom['flTransRefAmpl'] #Also in Meas and Protocol
         self.scanParameters['FOV'] = float(self.twix.hdr.Config.ReadFoV) #Field of View (I guess needed for ISMRMRD on calibrations??)
         self.scanParameters['TE'] = self.twix.hdr.Meas['alTE'].split(' ')[0] #Also in Protocol
         self.scanParameters['TR'] = self.twix.hdr.Config['TR'].split(' ')[0]
-        self.scanParameters['GasFrequency'] = self.twix.hdr.Dicom['lFrequency']
+        self.scanParameters['GasFrequency'] = self.twix.hdr.Dicom['lFrequency'] # -- Gas Frequency in Hz
         self.scanParameters['DisFrequencyOffset'] = self.twix.hdr.Phoenix["sWipMemBlock", "alFree", "4"]
         self.scanParameters['nFIDs'] = self.twix.hdr.Config['NRepMeas']
         self.scanParameters['nPts'] = self.twix.hdr.Config['VectorSize'] # This assumes oversampling
@@ -242,6 +244,8 @@ class FlipCal:
         self.scanParameters['referenceVoltage'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '0')] # -- reference voltage
         self.scanParameters['dwellTime'] = self.twix.hdr.Config['DwellTime']*1e-9 # in seconds
         self.scanParameters['FieldStrength'] = self.twix.hdr.Dicom['flMagneticFieldStrength'] # - B0 strength
+        self.scanParameters['PulseDuration'] = float(self.twix.hdr.Meas['alTD'].split(' ')[0]) # - Pulse Duration in us
+        self.scanParameters['dissolvedFrequencyOffset'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '4')]
         self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
     
     def parseMatlab(self):
@@ -429,17 +433,22 @@ class FlipCal:
         def residual_de(A,t,S):
             newS = FIDfunc_cf(t,*A)
             return np.sum(np.concatenate([S.real - newS.real, S.imag - newS.imag])**2)
-        
-        lbounds = np.array([[0,-300,-180,0,0],[0,-1200,-180,0,0],[0,-10000,-180,0,0]])
-        ubounds = np.array([[1,400,180,1000,1],[1,-300,180,1000,400],[1,-5000,180,100,1]])
-        #lbounds = np.array([[0,0,-180,0   ,0],   [0,-700,-180 ,0   ,0]  ,[0,-10000,-180,0,0]])
-        #ubounds = np.array([[1,700 ,180 ,1000,1],[1,0   , 180 ,1000,400],[1,-5000,180,100,1]])
+
+        Gasfreq = self.scanParameters['GasFrequency'] # - Target Gas frequency from Twix Header
+        DPfreq = self.scanParameters['dissolvedFrequencyOffset'] # - Target offset from Twix Header
+        ppmOffset = DPfreq / (Gasfreq*1e-6)
+        print(f'\033[36mThis experiment excited at \033[32m{DPfreq} Hz ({np.round(ppmOffset,0)} ppm)\033[36m higher than Gas.\033[37m')
+        RBCexpectedHz = (218*Gasfreq*1e-6) - DPfreq
+        MEMexpectedHz = (197*Gasfreq*1e-6) - DPfreq
+        print(f'\033[36mso I expect RBC near \033[32m{np.round(RBCexpectedHz,1)} Hz\033[36m, MEM near \033[32m{np.round(MEMexpectedHz,1)} Hz\033[36m, and Gas near RBC at \033[32m{np.round(-DPfreq,1)} Hz\033[36m,\033[37m')
+        lbounds = np.array([[0,RBCexpectedHz-358,-180,0,0],[0,MEMexpectedHz-358,-180,0,0],[0,-DPfreq-1000,-180,0,0]])
+        ubounds = np.array([[1,RBCexpectedHz+358,180,1000,1],[1,MEMexpectedHz+358,180,1000,400],[1,-DPfreq+1000,180,100,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
         for fit_iteration in range(5):
             diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
             de = np.reshape(diffev.x,(3,5))
-            #if (de[0,1] > 0) and (de[0,1] < 700) and (de[1,1] > -700) and (de[1,1] < 0):
-            if (de[0,1] > -300) and (de[0,1] < 400) and (de[1,1] > -1200) and (de[1,1] < -300):
+            #Check to see if we ran into a frequency bound on the fit - this usually indicates misfitting and will yield erroneous values. Refit if we did.
+            if (de[0,1] > (RBCexpectedHz-357)) and (de[0,1] < (RBCexpectedHz+357)) and (de[1,1] > (MEMexpectedHz-357)) and (de[1,1] < (MEMexpectedHz+357)):
                 break
             else:
                 print(f"Refitting {fit_iteration}/5.  RBC:{de[0,1]}  MEM:{de[1,1]}")
@@ -507,9 +516,11 @@ class FlipCal:
             self.results = RO_fit_params
             return RO_fit_params
     
-    def kappa(self,w, T = 670*1e-6):
+    def kappa(self,w, T = None):
         '''You give me your pulse time T, and resonance-offset frequency w in Hz, and I'll
         tell you what the relative amplitude of B1 you got.'''
+        if T is None:
+            T = self.scanParameters['PulseDuration']*1e-6
         wrad = w*2*np.pi
         return (2 / T) * np.sin(wrad * T / 2) * (1/wrad - wrad / (wrad**2 - (2 * np.pi / T)**2))
     
