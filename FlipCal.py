@@ -528,8 +528,8 @@ class FlipCal:
     def correctRBC2MEM(self,Srbc,Smem,wrbc,wmem): 
         '''Given an rbc and mem signal and the offset frequencies of rbc and mem, returns the rbc/mem magnetizations and ratio
         essentially this corrects for the fact that spins experience different flip angles based on their frequency (see Bechtel MRM 2023)'''
-        Mrbc = Srbc/np.sin(self.kappa(wrbc)*np.pi / 9)
-        Mmem = Smem/np.sin(self.kappa(wmem)*np.pi / 9)
+        Mrbc = Srbc/np.sin(self.kappa(wrbc)*self.scanParameters['FlipAngle_DP']*np.pi/180)
+        Mmem = Smem/np.sin(self.kappa(wmem)*self.scanParameters['FlipAngle_DP']*np.pi/180)
         RBC2MEMmag = Mrbc/Mmem
         RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc,T=710*1e-6))
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
