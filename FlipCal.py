@@ -48,7 +48,8 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '250208_calibration' 
+        self.version = '250406_calibration' 
+        # -- 250406, DP diff evolution fit now uses bounds based on excitation frequency, also numpys are exported
         # -- 241230, indication now a patientInfo key
         # -- 241206, RBC2MEM corrected based on excitation profile
         # -- 241115, Now saves plots as dicoms
@@ -961,6 +962,10 @@ class FlipCal:
         '''Given a pickled dictionary (yep, I actually named a variable pickle_dict), it will extract entries to class attributes'''
         for attr, value in pickle_dict.items():
             setattr(self, attr, value)
+
+    def exportNumpy(self,path = 'c:/pirl/data/FlipCal'):
+        '''Saves the FID array as a numpy'''
+        np.save(path,self.FID)
     
     def exportISMRMRD(self,path='c:/pirl/data/ISMRMRD.h5'):
             '''Consortium-Required Parameters: https://github.com/Xe-MRI-CTC/siemens-to-mrd-converter'''
@@ -1274,6 +1279,11 @@ if __name__ == "__main__":
             try:
                 dummy_dicom_path = values['dummy_dicom_path'].replace('"','')
                 FA.dicomPrintout(dummy_dicom_path= dummy_dicom_path,save_path=os.path.join(SAVEpath,f"FlipCal_DICOMS"))
+            except:
+                print('DICOM save failed at GUI level')    
+            try:
+                dummy_dicom_path = values['dummy_dicom_path'].replace('"','')
+                FA.exportNumpy(path=os.path.join(SAVEpath,f"FlipCal_numpy"))
             except:
                 print('DICOM save failed at GUI level')    
 ## --------------- Info Edit Buttons ------------------- ##
