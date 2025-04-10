@@ -199,14 +199,14 @@ class FlipCal:
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
             self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles[100:])
-            print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\n\033[37m")
-            print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\n\033[37m")
-            print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\n\033[37m")
+            print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\033[37m")
+            print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\033[37m")
+            print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\033[37m")
         except:
             print('RBC2MEM not not in attributes. Need to run fit_all_DP_FIDs() method to get wiggles.')
-            print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD \n\033[37m")
-            print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD \n\033[37m")
-            print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD\n\033[37m")
+            print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD\033[37m")
+            print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD\033[37m")
+            print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD\033[37m")
         self.processDate = datetime.date.today().strftime("%y%m%d")
     
     def parseTwix(self):
@@ -371,7 +371,7 @@ class FlipCal:
     
     def fit_GAS_FID(self,FID=None):
         '''Fits the SVD gas RO. t [sec], A [arb], phi [radians], f [Hz], L [Hz]. Note L * pi = 1/T2star'''
-        print('\033[32mFitting Gas FID...\033[37m')
+        print('\033[33m --- FIT GAS FID ---\033[37m')
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
             FID = self.GASfid
         def gasFitFunction(t, A, f, phi, L, G):
@@ -381,9 +381,9 @@ class FlipCal:
         gas_fit_params, _ = curve_fit(gasFitFunction, self.t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
         [A, f, phi, L, G] = gas_fit_params
         newGasFrequency = self.scanParameters['GasFrequency'] + f
-        print(f"\033[36mGasFID: Area -- Frequency -- Phase -- FWHML -- FWHMG\033[37m")
-        print(f"\033[36m        \033[37m {np.round(A,3)} -- {np.round(f,0)} -- {np.round(phi,1)} -- {np.round(L,1)} -- {np.round(G,1)}")
-        print(f"\033[34mGas FID is at frequency \033[32m{newGasFrequency}\033[34m Hz with L = {L} Hz, G = {G} Hz, ϕ = {phi*180/np.pi}°\033[37m")
+        print(f"\033[36mGasFID: Area -- Frequency [Hz] -- Phase [°] -- FWHML [Hz] -- FWHMG [Hz]\033[37m")
+        print(f"\033[36m        \033[37m {np.round(A,3)} --   {np.round(f,0)} --   {np.round(phi,1)} --   {np.round(L,1)} --   {np.round(G,1)}")
+        print(f"\033[34mGas FID is at frequency \033[32m{newGasFrequency}\033[34m Hz with L = {L} Hz, G = {G} Hz, ϕ = {phi}°\033[37m \n")
         return gas_fit_params, newGasFrequency
     
     def getFlipAngle(self,Decay=None):
@@ -397,19 +397,20 @@ class FlipCal:
         param_err = np.sqrt(np.diag(pcov))
         self.flip_angle = np.abs(self.flipAngleFitParams[1] * 180 / np.pi)
         self.flip_err = param_err[1] * 180 / np.pi
+        print(f"\033[33m --- FIT GAS DECAY --- \033[37m")
         print(f'\033[36mI calculated a flip angle = {np.round(self.flip_angle,1)} ± {np.round(self.flip_err,1)}\033[37m')
         try:
             self.newVoltage = self.scanParameters['referenceVoltage']*self.scanParameters['FlipAngle']/self.flip_angle
-            print(f"\033[36m...So you should change your reference voltage from \033[32m{np.round(self.scanParameters['referenceVoltage'],1)} \033[36mto \033[32m{np.round(self.newVoltage,1)}\033[37m")
+            print(f"\033[36m...So you should change your reference voltage from \033[32m{np.round(self.scanParameters['referenceVoltage'],1)} \033[36mto \033[32m{np.round(self.newVoltage,1)}\033[37m \n")
         except:
-            print(f"\033[36m---Either referenceVoltage or FlipAngle is not in scanParameters\033[37m")
+            print(f"\033[36m---Either referenceVoltage or FlipAngle is not in scanParameters\033[37m \n")
     
     def fit_DP_FID(self,FID=None,printResult = True):
         '''Give it a DP FID, and it will fit to the 3-resonance-decay model and 
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
             FID = self.DPfid
-        t = np.arange(len(self.DPfid)) * self.scanParameters['dwellTime']
+        t = np.arange(len(FID)) * self.scanParameters['dwellTime']
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
@@ -438,10 +439,8 @@ class FlipCal:
         Gasfreq = self.scanParameters['GasFrequency'] # - Target Gas frequency from Twix Header
         DPfreq = self.scanParameters['dissolvedFrequencyOffset'] # - Target offset from Twix Header
         ppmOffset = DPfreq / (Gasfreq*1e-6)
-        print(f'\033[36mThis experiment excited at \033[32m{DPfreq} Hz ({np.round(ppmOffset,0)} ppm)\033[36m higher than Gas.\033[37m')
         RBCexpectedHz = (218*Gasfreq*1e-6) - DPfreq
         MEMexpectedHz = (197*Gasfreq*1e-6) - DPfreq
-        print(f'\033[36mso I expect RBC near \033[32m{np.round(RBCexpectedHz,1)} Hz\033[36m, MEM near \033[32m{np.round(MEMexpectedHz,1)} Hz\033[36m, and Gas near RBC at \033[32m{np.round(-DPfreq,1)} Hz\033[36m,\033[37m')
         lbounds = np.array([[0,RBCexpectedHz-358,-180,0,0],[0,MEMexpectedHz-358,-180,0,0],[0,-DPfreq-1000,-180,0,0]])
         ubounds = np.array([[1,RBCexpectedHz+358,180,1000,1],[1,MEMexpectedHz+358,180,1000,400],[1,-DPfreq+1000,180,100,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
@@ -455,12 +454,15 @@ class FlipCal:
                 print(f"Refitting {fit_iteration}/5.  RBC:{de[0,1]}  MEM:{de[1,1]}")
         
         if(printResult):
+            print(f"\033[33m --- FIT DP FID --- \033[37m")
+            print(f'\033[36mThis experiment excited at \033[32m{DPfreq} Hz ({np.round(ppmOffset,0)} ppm)\033[36m higher than Gas.\033[37m')
+            print(f'\033[36mso I expect RBC near \033[32m{np.round(RBCexpectedHz,1)} Hz\033[36m, MEM near \033[32m{np.round(MEMexpectedHz,1)} Hz\033[36m, and Gas near RBC at \033[32m{np.round(-DPfreq,1)} Hz\033[36m,\033[37m')
             print(f"\033[36m     Area -- Frequency -- Phase -- FWHML -- FWHMG\033[37m")
             print(f"\033[36mRBC:\033[37m {np.round(de[0,0]/de[1,0],3)} -- {np.round(de[0,1],0)} -- {np.round(de[0,2],1)} -- {np.round(de[0,3],1)} -- {np.round(de[0,4],1)}")
             print(f"\033[36mMEM:\033[37m {np.round(de[1,0]/de[1,0],3)} -- {np.round(de[1,1],0)} -- {np.round(de[1,2],1)} -- {np.round(de[1,3],1)} -- {np.round(de[1,4],1)}")
             print(f"\033[36mGAS:\033[37m {np.round(de[2,0]/de[1,0],3)} -- {np.round(de[2,1],0)} -- {np.round(de[2,2],1)} -- {np.round(de[2,3],1)} -- {np.round(de[2,4],1)}")
             _,_,RBC2MEMmag,RBC2MEMdix = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
-            print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},")
+            print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},\n")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
     
@@ -519,7 +521,7 @@ class FlipCal:
     
     def kappa(self,w, T = None):
         '''You give me your pulse time T, and resonance-offset frequency w in Hz, and I'll
-        tell you what the relative amplitude of B1 you got.'''
+        tell you what the relative amplitude of B1 you got. Assumes Hanning Window Pulse'''
         if T is None:
             T = self.scanParameters['PulseDuration']*1e-6
         wrad = w*2*np.pi
@@ -531,7 +533,7 @@ class FlipCal:
         Mrbc = Srbc/np.sin(self.kappa(wrbc)*self.scanParameters['FlipAngle_DP']*np.pi/180)
         Mmem = Smem/np.sin(self.kappa(wmem)*self.scanParameters['FlipAngle_DP']*np.pi/180)
         RBC2MEMmag = Mrbc/Mmem
-        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem-wrbc,T=710*1e-6))
+        RBC2MEMdix = RBC2MEMmag*np.sin(np.pi/9)/np.sin(np.pi/9*self.kappa(wmem,T=710*1e-6))
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
 
     def calcWiggleAmp(self,wiggles): 
@@ -1082,6 +1084,24 @@ class FlipCal:
         return string
 
 
+
+
+
+
+
+U, S, Vt = np.linalg.svd(FA.DP, full_matrices=False)
+rank = 3
+U_reduced = U[:, :rank]
+S_reduced = np.diag(S[:rank])
+Vt_reduced = Vt[:rank, :]
+DP_approx = U_reduced @ S_reduced @ Vt_reduced
+
+plt.imshow(abs(DP_approx))
+plt.plot(DP_approx[:,100].real)
+plt.plot(FA.DP[:,100].real)
+plt.show()
+
+A = FA.fit_all_DP_FIDs(DP_approx)
 
 ### --------------------------------------------------------------------------------------------####
 ### -----------------------------------------Main GUI Script -----------------------------------####
