@@ -1,0 +1,1565 @@
+{
+    "Specific Character Set": "ISO_IR 100",
+    "Image Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+    "Instance Creation Date": "20250410",
+    "Instance Creation Time": "154349.460000",
+    "SOP Class UID": "1.2.840.10008.5.1.4.1.1.4.1",
+    "SOP Instance UID": "1.3.12.2.1107.5.2.50.176294.2025041015435022770097772",
+    "Study Date": "20250410",
+    "Series Date": "20250410",
+    "Content Date": "20250410",
+    "Acquisition DateTime": "20250410154349.460000",
+    "Study Time": "151138.700000",
+    "Series Time": "154350.283000",
+    "Content Time": "154358.995000",
+    "Accession Number": "MR-25-0012503",
+    "Modality": "MR",
+    "Manufacturer": "Siemens Healthineers",
+    "Institution Name": "MU HEALTHCARE NEXTGEN",
+    "Institution Address": " ,,,US,",
+    "Referring Physician's Name": "Holliday^Zachary^Michael",
+    "Station Name": "AWP176294",
+    "Study Description": "MRI Xenon Lung Ventilation",
+    "Series Description": "XE_FLASH_Vent",
+    "Performing Physician's Name": "",
+    "Operators' Name": "",
+    "Manufacturer's Model Name": "MAGNETOM Vida",
+    "Referenced Study Sequence": [],
+    "Referenced Performed Procedure Step Sequence": [
+        {
+            "Referenced SOP Class UID": "1.2.840.10008.3.1.2.3.3",
+            "Referenced SOP Instance UID": "1.3.12.2.1107.5.2.50.176294.30000025041007223226200000010"
+        }
+    ],
+    "Referenced Image Evidence Sequence": [
+        {
+            "Referenced Series Sequence": [
+                {
+                    "Referenced SOP Sequence": [
+                        {
+                            "Referenced SOP Class UID": "1.2.840.10008.5.1.4.1.1.4.1",
+                            "Referenced SOP Instance UID": "1.3.12.2.1107.5.2.50.176294.2025041015140389355495637",
+                            "Purpose of Reference Code Sequence": [
+                                {
+                                    "Code Value": "121311",
+                                    "Coding Scheme Designator": "DCM",
+                                    "Code Meaning": "Localizer"
+                                }
+                            ]
+                        }
+                    ],
+                    "Series Instance UID": "1.3.12.2.1107.5.2.50.176294.2025041015140369742695636.0.0.0"
+                }
+            ],
+            "Study Instance UID": "1.2.840.113970.1.2.840.113970.18064362.20250410.1150141"
+        }
+    ],
+    "Pixel Presentation": "MONOCHROME",
+    "Volumetric Properties": "VOLUME",
+    "Volume Based Calculation Technique": "NONE",
+    "Complex Image Component": "MAGNITUDE",
+    "Acquisition Contrast": "UNKNOWN",
+    "Private Creator": "SIEMENS MR SDR 01",
+    "Private tag data": "ACQUISITION",
+    "Patient's Name": "Lawrence^Frances^Cogle",
+    "Patient ID": "16211150",
+    "Issuer of Patient ID": "UH",
+    "Patient's Birth Date": "19480910",
+    "Patient's Birth Time": "000000",
+    "Patient's Sex": "F",
+    "Patient's Age": "076Y",
+    "Patient's Size": "1.6256",
+    "Patient's Weight": "53.5239",
+    "Medical Alerts": "",
+    "Allergies": "",
+    "Patient Identity Removed": "NO",
+    "Body Part Examined": "CHEST",
+    "MR Acquisition Type": "2D",
+    "Magnetic Field Strength": "3",
+    "Spacing Between Slices": "10",
+    "Device Serial Number": "176294",
+    "Software Versions": "syngo MR XA60",
+    "Protocol Name": "XE_FLASH_Vent",
+    "Variable Flip Angle Flag": "N",
+    "B1rms": "-9999.0",
+    "Patient Position": "FFS",
+    "Content Qualification": "RESEARCH",
+    "Pulse Sequence Name": "fl2d1",
+    "Echo Pulse Sequence": "GRADIENT",
+    "Multi-planar Excitation": "NO",
+    "Phase Contrast": "NO",
+    "Time of Flight Contrast": "NO",
+    "Steady State Pulse Sequence": "NONE",
+    "Echo Planar Pulse Sequence": "NO",
+    "Saturation Recovery": "NO",
+    "Spectrally Selected Suppression": "NONE",
+    "Oversampling Phase": "NONE",
+    "Geometry of k-Space Traversal": "RECTILINEAR",
+    "Segmented k-Space Traversal": "SINGLE",
+    "Rectilinear Phase Encode Reordering": "LINEAR",
+    "k-space Filtering": "NONE",
+    "Acquisition Duration": "9.489",
+    "Number of k-Space Trajectories": "1",
+    "Resonant Nucleus": "129Xe",
+    "Applicable Safety Standard Agency": "IEC",
+    "Study Instance UID": "1.2.840.113970.1.2.840.113970.18064362.20250410.1150141",
+    "Series Instance UID": "1.3.12.2.1107.5.2.50.176294.2025041015395903601397769.0.0.0",
+    "Study ID": "8303442",
+    "Series Number": "5",
+    "Acquisition Number": "1",
+    "Instance Number": "1",
+    "Frame of Reference UID": "1.3.12.2.1107.5.2.50.176294.2.20250410151350494.0.0.0",
+    "Laterality": "U",
+    "Number of Temporal Positions": "1",
+    "Position Reference Indicator": "",
+    "Image Comments": "Not for diagnostic use",
+    "Dimension Organization Sequence": [
+        {
+            "Dimension Organization UID": "1.3.12.2.1107.5.2.50.176294.2025041015435023241197773"
+        }
+    ],
+    "Dimension Index Sequence": [
+        {
+            "Dimension Organization UID": "1.3.12.2.1107.5.2.50.176294.2025041015435023241197773",
+            "Dimension Index Pointer": "(0020, 9056)",
+            "Functional Group Pointer": "(0020, 9111)"
+        },
+        {
+            "Dimension Organization UID": "1.3.12.2.1107.5.2.50.176294.2025041015435023241197773",
+            "Dimension Index Pointer": "(0020, 9057)",
+            "Functional Group Pointer": "(0020, 9111)"
+        },
+        {
+            "Dimension Organization UID": "1.3.12.2.1107.5.2.50.176294.2025041015435023241197773",
+            "Dimension Index Pointer": "(0020, 9128)",
+            "Functional Group Pointer": "(0020, 9111)"
+        }
+    ],
+    "Samples per Pixel": "1",
+    "Photometric Interpretation": "MONOCHROME2",
+    "Number of Frames": "17",
+    "Rows": "256",
+    "Columns": "224",
+    "Bits Allocated": "16",
+    "Bits Stored": "12",
+    "High Bit": "11",
+    "Pixel Representation": "0",
+    "Smallest Image Pixel Value": "0",
+    "Largest Image Pixel Value": "3120",
+    "Burned In Annotation": "NO",
+    "Lossy Image Compression": "00",
+    "Performed Procedure Step Start Date": "20250410",
+    "Performed Procedure Step Start Time": "151138.700000",
+    "Performed Procedure Step End Date": "20250410",
+    "Performed Procedure Step ID": "SI31b4a021455245",
+    "Performed Procedure Step Description": "MRI Xenon Lung Ventilation",
+    "Request Attributes Sequence": [
+        {
+            "Accession Number": "MR-25-0012503",
+            "Referenced Study Sequence": [],
+            "Study Instance UID": "1.2.840.113970.1.2.840.113970.18064362.20250410.1150141",
+            "Requested Procedure Description": "MRI Xenon Lung Ventilation",
+            "Requested Procedure Code Sequence": [],
+            "Scheduled Procedure Step Description": "MRI Xenon Lung Ventilation",
+            "Scheduled Protocol Code Sequence": [],
+            "Scheduled Procedure Step ID": "MRILUNXENO",
+            "Requested Procedure ID": "8303442"
+        }
+    ],
+    "Acquisition Context Sequence": [],
+    "Issue Date of Imaging Service Request": "20250410",
+    "Presentation LUT Shape": "IDENTITY",
+    "Shared Functional Groups Sequence": [
+        {
+            "Referenced Image Sequence": [
+                {
+                    "Referenced SOP Class UID": "1.2.840.10008.5.1.4.1.1.4.1",
+                    "Referenced SOP Instance UID": "1.3.12.2.1107.5.2.50.176294.2025041015140389355495637",
+                    "Referenced Frame Number": "[3, 5]",
+                    "Purpose of Reference Code Sequence": [
+                        {
+                            "Code Value": "121311",
+                            "Coding Scheme Designator": "DCM",
+                            "Code Meaning": "Localizer"
+                        }
+                    ]
+                }
+            ],
+            "MR Imaging Modifier Sequence": [
+                {
+                    "Pixel Bandwidth": "831",
+                    "Magnetization Transfer": "NONE",
+                    "Blood Signal Nulling": "NO",
+                    "Tagging": "NONE",
+                    "Transmitter Frequency": "34.081554"
+                }
+            ],
+            "MR Receive Coil Sequence": [
+                {
+                    "Receive Coil Name": "129Xe_Vest",
+                    "Receive Coil Manufacturer Name": "NN",
+                    "Receive Coil Type": "MULTICOIL",
+                    "Quadrature Receive Coil": "NO",
+                    "Multi-Coil Definition Sequence": [
+                        {
+                            "Multi-Coil Element Name": "LP",
+                            "Multi-Coil Element Used": "YES"
+                        }
+                    ]
+                }
+            ],
+            "MR Transmit Coil Sequence": [
+                {
+                    "Transmit Coil Name": "129Xe_Vest",
+                    "Transmit Coil Manufacturer Name": "NN",
+                    "Transmit Coil Type": "SURFACE"
+                }
+            ],
+            "MR Spatial Saturation Sequence": [],
+            "MR Timing and Related Parameters Sequence": [
+                {
+                    "Repetition Time": "5.7",
+                    "Echo Train Length": "1",
+                    "Flip Angle": "8",
+                    "Operating Mode Sequence": [
+                        {
+                            "Operating Mode Type": "GRADIENT",
+                            "Operating Mode": "IEC_NORMAL"
+                        },
+                        {
+                            "Operating Mode Type": "RF",
+                            "Operating Mode": "IEC_NORMAL"
+                        }
+                    ],
+                    "Gradient Output Type": "PER_NERVE_STIM",
+                    "Gradient Output": "0.6123694181442261",
+                    "Specific Absorption Rate Sequence": [
+                        {
+                            "Specific Absorption Rate Definition": "IEC_WHOLE_BODY",
+                            "Specific Absorption Rate Value": "0.0251093509690094"
+                        },
+                        {
+                            "Specific Absorption Rate Definition": "IEC_PARTIAL_BODY",
+                            "Specific Absorption Rate Value": "0.0"
+                        },
+                        {
+                            "Specific Absorption Rate Definition": "IEC_HEAD",
+                            "Specific Absorption Rate Value": "0.0"
+                        },
+                        {
+                            "Specific Absorption Rate Definition": "IEC_LOCAL",
+                            "Specific Absorption Rate Value": "0.20159240504430906"
+                        },
+                        {
+                            "Specific Absorption Rate Definition": "SMR_BORELOCAL",
+                            "Specific Absorption Rate Value": "0.0"
+                        }
+                    ],
+                    "RF Echo Train Length": "0",
+                    "Gradient Echo Train Length": "1"
+                }
+            ],
+            "MR Modifier Sequence": [
+                {
+                    "Inversion Recovery": "NO",
+                    "Flow Compensation": "NONE",
+                    "Spoiling": "NONE",
+                    "T2 Preparation": "NO",
+                    "Spectrally Selected Excitation": "NONE",
+                    "Spatial Pre-saturation": "NONE",
+                    "Partial Fourier Direction": "PHASE",
+                    "Parallel Acquisition": "NO",
+                    "Partial Fourier": "YES"
+                }
+            ],
+            "MR FOV/Geometry Sequence": [
+                {
+                    "Percent Sampling": "100",
+                    "Percent Phase Field of View": "87.5",
+                    "In-plane Phase Encoding Direction": "ROW",
+                    "MR Acquisition Frequency Encoding Steps": "128",
+                    "MR Acquisition Phase Encoding Steps in-plane": "112"
+                }
+            ],
+            "Frame Anatomy Sequence": [
+                {
+                    "Anatomic Region Sequence": [
+                        {
+                            "Code Value": "T-D3000",
+                            "Coding Scheme Designator": "SRT",
+                            "Code Meaning": "Chest"
+                        }
+                    ],
+                    "Frame Laterality": "U"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDS 01",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDS 01",
+                    "Private tag data": "0.6123694181442261"
+                }
+            ]
+        }
+    ],
+    "Per-frame Functional Groups Sequence": [
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154349.460000",
+                    "Frame Reference DateTime": "20250410154349.460000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "1",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 1, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -63.7321, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_1_1_1_1_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "186",
+                    "Window Width": "425"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154350.020000",
+                    "Frame Reference DateTime": "20250410154350.020000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "2",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 2, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -53.7321, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_2_1_1_2_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "235",
+                    "Window Width": "621"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154350.577500",
+                    "Frame Reference DateTime": "20250410154350.577500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "3",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 3, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -43.7321, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_3_1_1_3_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "325",
+                    "Window Width": "892"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154351.135000",
+                    "Frame Reference DateTime": "20250410154351.135000",
+                    "Frame Acquisition Duration": "555.0",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "4",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 4, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -33.7321, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_4_1_1_4_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "672",
+                    "Window Width": "1538"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154351.695000",
+                    "Frame Reference DateTime": "20250410154351.695000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "5",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 5, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -23.7321, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_5_1_1_5_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "726",
+                    "Window Width": "1829"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154352.252500",
+                    "Frame Reference DateTime": "20250410154352.252500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "6",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 6, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -13.7321, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_6_1_1_6_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "750",
+                    "Window Width": "1781"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154352.812500",
+                    "Frame Reference DateTime": "20250410154352.812500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "7",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 7, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, -3.73206, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_7_1_1_7_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "727",
+                    "Window Width": "1655"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154353.370000",
+                    "Frame Reference DateTime": "20250410154353.370000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "8",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 8, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 6.26794, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_8_1_1_8_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "687",
+                    "Window Width": "1521"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154353.930000",
+                    "Frame Reference DateTime": "20250410154353.930000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "9",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 9, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 16.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_9_1_1_9_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "682",
+                    "Window Width": "1494"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154354.487500",
+                    "Frame Reference DateTime": "20250410154354.487500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "10",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 10, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 26.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_10_1_1_10_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "687",
+                    "Window Width": "1527"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154355.047500",
+                    "Frame Reference DateTime": "20250410154355.047500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "11",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 11, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 36.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_11_1_1_11_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "727",
+                    "Window Width": "1630"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154355.605000",
+                    "Frame Reference DateTime": "20250410154355.605000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "12",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 12, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 46.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_12_1_1_12_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "613",
+                    "Window Width": "1381"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154356.162500",
+                    "Frame Reference DateTime": "20250410154356.162500",
+                    "Frame Acquisition Duration": "555.0",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "13",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 13, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 56.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_13_1_1_13_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "535",
+                    "Window Width": "1231"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154356.722500",
+                    "Frame Reference DateTime": "20250410154356.722500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "14",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 14, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 66.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_14_1_1_14_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "430",
+                    "Window Width": "1036"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154357.280000",
+                    "Frame Reference DateTime": "20250410154357.280000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "15",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 15, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 76.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_15_1_1_15_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "286",
+                    "Window Width": "765"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154357.840000",
+                    "Frame Reference DateTime": "20250410154357.840000",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "16",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 16, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 86.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_16_1_1_16_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "214",
+                    "Window Width": "510"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        },
+        {
+            "MR Echo Sequence": [
+                {
+                    "Echo Number(s)": "1",
+                    "Effective Echo Time": "2.75"
+                }
+            ],
+            "MR Averages Sequence": [
+                {
+                    "Number of Averages": "1"
+                }
+            ],
+            "MR Image Frame Type Sequence": [
+                {
+                    "Frame Type": "['ORIGINAL', 'PRIMARY', 'M', 'NONE']",
+                    "Pixel Presentation": "MONOCHROME",
+                    "Volumetric Properties": "VOLUME",
+                    "Volume Based Calculation Technique": "NONE",
+                    "Complex Image Component": "MAGNITUDE",
+                    "Acquisition Contrast": "UNKNOWN",
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "DIS2D"
+                }
+            ],
+            "Frame Content Sequence": [
+                {
+                    "Frame Acquisition DateTime": "20250410154358.397500",
+                    "Frame Reference DateTime": "20250410154358.397500",
+                    "Frame Acquisition Duration": "552.5",
+                    "Stack ID": "1",
+                    "In-Stack Position Number": "17",
+                    "Temporal Position Index": "1",
+                    "Frame Acquisition Number": "1",
+                    "Dimension Index Values": "[1, 17, 1]"
+                }
+            ],
+            "Plane Position Sequence": [
+                {
+                    "Image Position (Patient)": "[-168, 96.2679, 192]"
+                }
+            ],
+            "Plane Orientation Sequence": [
+                {
+                    "Image Orientation (Patient)": "[1, 0, 0, 0, 0, -1]"
+                }
+            ],
+            "Private Creator": "SIEMENS MR SDI 02",
+            "Private tag data": [
+                {
+                    "Private Creator": "SIEMENS MR SDI 02",
+                    "Private tag data": "1_1_1_1_1_1_1_17_1_1_17_1_327_1_1_1_1_1_1_1_17_1_1"
+                }
+            ],
+            "Pixel Measures Sequence": [
+                {
+                    "Slice Thickness": "10",
+                    "Spacing Between Slices": "10",
+                    "Pixel Spacing": "[1.5, 1.5]"
+                }
+            ],
+            "Frame VOI LUT Sequence": [
+                {
+                    "Window Center": "199",
+                    "Window Width": "451"
+                }
+            ],
+            "Pixel Value Transformation Sequence": [
+                {
+                    "Rescale Intercept": "0",
+                    "Rescale Slope": "1",
+                    "Rescale Type": "US"
+                }
+            ]
+        }
+    ]
+}

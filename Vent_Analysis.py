@@ -7,6 +7,7 @@ import os
 import pickle # --------------------------- For Pickling and unpickling data
 from PIL import Image, ImageTk, ImageDraw, ImageFont # ---------- for arrayToImage conversion
 import pydicom as dicom # ----------------- for openSingleDICOM and openDICOMFolder
+from pydicom.dataset import Dataset # ----- for saving dicoms as PACS in exportDICOM()
 from scipy.signal import medfilt2d # ------ for calculateVDP
 import SimpleITK as sitk # ---------------- for N4 Bias Correection
 import skimage.util # --------------------- for image montages
@@ -63,7 +64,8 @@ class Vent_Analysis:
                  pickle_dict = None,
                  pickle_path = None):
         
-        self.version = '241113_vent'
+        self.version = '250413_vent'
+        # 250413 - exportDICOM() now export PACs-compatible dicoms using the xenon dicom header as template
         # 241113 - exportNumpys() added, pickle issues fixed, metadata saves pydicom objects as strings now
         # 241112 - fixed the missing pickle loader
         # 241007 - updated screenshot and unpickling methods
@@ -429,54 +431,72 @@ class Vent_Analysis:
         except:
             print(f'\033[33mCould not export metadata json file to numpy\033[37m')
     
-    def exportDICOM(self,ds,save_dir = 'C:/PIRL/data/',optional_text = '',forPACS=True):
-        '''Create and saves the Ventilation images with defectArray overlayed
-        Note: Our PACS doesn't seem to like the export of 3D data as a single DICOM...'''
+    def exportDICOM(self,dicom_template_path,save_dir = 'C:/PIRL/data/',SlicLocs = None,series_description = 'RPT_VentToDICOM'):
+        '''Create and saves the Ventilation images with defectArray overlayed'''
+        dicom_template = dicom.dcmread(dicom_template_path)
+        def copy_metadata(src_dcm):
+            new_dcm = Dataset()
+            for elem in src_dcm.iterall():
+                if elem.tag != (0x7FE0, 0x0010):  # Exclude Pixel Data
+                    new_dcm.add(elem)
+            return new_dcm
         if self.metadata['VDP'] == '':
             print('\033[31mCant export dicoms until you run calculate_VDP()...\033[37m')
-        else:
-            BW = (self.normalize(np.abs(self.N4HPvent)) * (2 ** 8 - 1)).astype('uint%d' % 8)
-            RGB = np.zeros((self.N4HPvent.shape[0],self.N4HPvent.shape[1],self.N4HPvent.shape[2],3),dtype=np.uint8)
-            RGB[:,:,:,0] = BW*(self.defectArray==0) + 255*(self.defectArray==1)
-            RGB[:,:,:,1] = BW*(self.defectArray==0)
-            RGB[:,:,:,2] = BW*(self.defectArray==0)
-            if forPACS is False:
-                RGB = np.transpose(RGB,axes = (2,0,1,3)) # first dimension must always be slices for DICOM export
-                ds.PhotometricInterpretation = 'RGB'
-                ds.SamplesPerPixel = 3
-                ds.Rows, ds.Columns, ds.NumberOfFrames  = BW.shape
-                ds.BitsAllocated = ds.BitsStored = 8
-                ds.HighBit = 7
-                ds.SOPInstanceUID = ds.SeriesInstanceUID = dicom.uid.generate_uid()
-                ds.PixelData = RGB.tobytes()
-                ds.SeriesDescription = f"{optional_text} - VDP: {np.round(self.metadata['VDP'],1)}"
-                save_path = os.path.join(save_dir,f"{self.metadata['PatientName']}_defectDICOM.dcm")
-                ds.save_as(save_path)
-                print(f'\033[32mdefect DICOM saved to {save_path}\033[37m')
-            elif forPACS is True:
-                new_uid = dicom.uid.generate_uid()
-                self.ds.SeriesInstanceUID = new_uid
-                num_dicoms = BW.shape[2]
-                all_locations = range(0, num_dicoms, 1)
-                num_bits = 8
-                dicom_path = os.path.join(save_dir,'defectDICOMS')
-                if not os.path.isdir(dicom_path):
-                    os.makedirs(dicom_path)
-                for i in range(num_dicoms):
-                    color_image = RGB[:,:,i,:]
-                    ds.PixelData = color_image.tobytes()
-                    ds.Rows, ds.Columns = color_image.shape[:2]
-                    ds.SamplesPerPixel = 3
-                    ds.PhotometricInterpretation = 'RGB'
-                    ds.BitsAllocated = num_bits
-                    ds.BitsStored = num_bits
-                    ds.SeriesDescription = f"{optional_text} - VDP: {np.round(self.metadata['VDP'],1)}"
-                    ds.InstanceNumber = i + 1
-                    ds.SliceLocation = all_locations[i]
-                    new_uid = dicom.uid.generate_uid()
-                    ds.SOPInstanceUID = new_uid
-                    ds.NumberOfFrames = 1
-                    ds.save_as(os.path.join(dicom_path, f"dicom_{i}.dcm"))
+            return
+        os.makedirs(save_dir, exist_ok=True)
+        BW = (self.normalize(np.abs(self.N4HPvent)) * (2 ** 8 - 1)).astype('uint%d' % 8)
+        RGB = np.zeros((self.N4HPvent.shape[0],self.N4HPvent.shape[1],self.N4HPvent.shape[2],3),dtype=np.uint8)
+        RGB[:,:,:,0] = BW*(self.defectArray==0) + 255*(self.defectArray==1)
+        RGB[:,:,:,1] = BW*(self.defectArray==0)
+        RGB[:,:,:,2] = BW*(self.defectArray==0)
+        shared_series_uid = dicom.uid.generate_uid()
+        study_uid = dicom_template.StudyInstanceUID
+        if SlicLocs is None:
+            SlicLocs = np.repeat(0,RGB.shape[2])
+        for page_num in range(RGB.shape[2]):
+            image = RGB[:, :, page_num, :]
+            pixel_array = np.array(image, dtype=np.uint8)
+            dicom_file = copy_metadata(dicom_template)
+            dicom_file.SOPInstanceUID = dicom.uid.generate_uid()
+            dicom_file.InstanceNumber = page_num + 1
+            dicom_file.StudyInstanceUID = study_uid
+            dicom_file.SeriesInstanceUID = shared_series_uid
+            dicom_file.SeriesNumber = 999
+            dicom_file.SeriesDescription = series_description
+            dicom_file.ImageType = ["DERIVED", "SECONDARY"]
+            dicom_file.ContentDate = datetime.datetime.now().strftime("%Y%m%d")
+            dicom_file.ContentTime = datetime.datetime.now().strftime("%H%M%S.%f")[:13]  # HHMMSS.fff
+            dicom_file.Manufacturer = "MU PIRL pdf_to_dicom.py v250312"
+            dicom_file.SOPClassUID = dicom.uid.SecondaryCaptureImageStorage
+            dicom_file.Rows, dicom_file.Columns, _ = pixel_array.shape
+            dicom_file.PhotometricInterpretation = "RGB"
+            dicom_file.SamplesPerPixel = 3
+            dicom_file.PlanarConfiguration = 0
+            dicom_file.BitsAllocated = 8
+            dicom_file.BitsStored = 8
+            dicom_file.HighBit = 7
+            dicom_file.PixelRepresentation = 0
+            dicom_file.PixelData = pixel_array.tobytes()
+            # Include slice location metadata
+            dicom_file.SliceLocation = SlicLocs[page_num]
+            # Here we indicate what the where the topleft voxel in each image is
+            # voxel_size = 3.125  # mm 
+            # dim = 128  # assuming cube 128x128x128 
+            # x0 = -(dim // 2) * voxel_size  # left-most pixel X coord 
+            # z0 = (dim // 2) * voxel_size   # top-most pixel Z coord  
+            # y0 = float(SlicLocs[page_num]) 
+            # dicom_file.ImagePositionPatient = [x0, y0, z0] 
+            # Keep consistent orientation unless you want to change it
+            # ImageOrientationPatient = [X_row, Y_row, Z_row, X_col, Y_col, Z_col]
+            # the patient orientation follows RL=X, AP = Y, FH = Z
+            # Don't screw this part up! I always setup numpy arrays with 
+            # rows increasing from superior to inferior (Z_row = -1) and
+            # columns increasing from right to left (X_col = 1)
+            if 'ImageOrientationPatient' not in dicom_file:
+                dicom_file.ImageOrientationPatient = [0,0,-1,1,0,0]  # Default Coronal
+            dicom_file.is_little_endian = dicom_template.is_little_endian
+            dicom_file.is_implicit_VR = dicom_template.is_implicit_VR
+            dicom_file.save_as(os.path.join(save_dir, f"dicom_{page_num}.dcm"))
     
     def cropToData(self, A, border=0,borderSlices=False):
         '''Given a 3D mask array, crops rows,cols,slices to only those with signal (useful for creating montage slides)'''
@@ -696,14 +716,31 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 # with open('C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241113/numpys/metadata.json', 'w') as json_file:
 #     json.dump(Vent2.metadata, json_file, indent=4)
 
+# Vent1 = Vent_Analysis(pickle_path="C:/tmp/VentAnalysis_RPT_250413/Clinical_FCL_250410_visit1_Albuterol.pkl")
+# Vent1.exportDICOM(Vent1.ds,save_dir = 'c:/tmp/',optional_text='RPT2',series_description='Vent_VDP=%')
 
+# def get_slice_locations_from_folder(folder_path):
+#     slice_locations = []
+#     for filename in os.listdir(folder_path):
+#         file_path = os.path.join(folder_path, filename)
+#         try:
+#             ds = dicom.dcmread(file_path, stop_before_pixels=True)
+#             slice_location = getattr(ds, 'SliceLocation', None)
+#             slice_locations.append(float(slice_location))
+#         except Exception as e:
+#             print(f"Skipping file {filename}: {e}")
+#             continue
+#     return slice_locations
+
+# get_slice_locations_from_folder("C:/tmp/pre_xenon/DICOM/EXP00000")
 ### ------------------------------------------------------------------------------------------------ ###
 ### ---------------------------------------- MAIN GUI SCRIPT --------------------------------------- ###
 ### ------------------------------------------------------------------------------------------------ ###
 
 if __name__ == "__main__":
-    version = '241113_VentAnalysisGUI'
-    image_box_size = 50
+    version = '250413_VentAnalysisGUI'
+    # - 250413 - Now uses DICOM template path to populate the exportDICOM() header so defects images can be put in PACS
+    image_box_size = 40
     ARCHIVE_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/Archive/'
     
     import PySimpleGUI as sg
@@ -744,10 +781,10 @@ if __name__ == "__main__":
     sg.theme('Default1')
     PIRLlogo = os.path.join(os.getcwd(),'PIRLlogo.png')
     path_label_column = [[sg.Text('Path to Ventilation DICOM:')],[sg.Text('Path to Mask Folder:')],[sg.Text('Path to Proton:')],[sg.Text('Path to Twix:')]]
-    path_column = [[sg.InputText(key='DICOMpath',default_text='C:/PIRL/data/MEPOXE0039/48522586xe',size=(200,200))],
-                   [sg.InputText(key='MASKpath',default_text='C:/PIRL/data/MEPOXE0039/Mask',size=(200,200))],
-                   [sg.InputText(key='PROTONpath',default_text='C:/PIRL/data/MEPOXE0039/48522597prot',size=(200,200))],
-                   [sg.InputText(key='TWIXpath',default_text='C:/PIRL/data/MEPOXE0039/meas_MID00077_FID58046_6_FLASH_gre_hpg_2201_SliceThi_10.dat',size=(200,200))]]
+    path_column = [[sg.InputText(key='DICOMpath',default_text="C:/tmp/86245872xe_pre",size=(200,200))],
+                   [sg.InputText(key='MASKpath',default_text="C:/tmp/xenoview PRE/lung-segmentation-legacy/lung-segmentation-volume",size=(200,200))],
+                   [sg.InputText(key='PROTONpath',default_text="C:/tmp/86245905ins",size=(200,200))],
+                   [sg.InputText(key='TWIXpath',size=(200,200))]]
     
     IRB_select_column = [
                     [sg.Radio('GenXe','IRB',key='genxeRadio',enable_events=True)],
@@ -809,7 +846,8 @@ if __name__ == "__main__":
         [sg.Column(patient_data_column),sg.VSeperator(),sg.Column(dicom_data_column),sg.VSeperator(),sg.Column(image_column)],  
         [sg.Text('Notes:'),sg.InputText(key='notes',size=(200,200))],
         [sg.Text('',key = '-STATUS-')],
-        [sg.Text('Export Path:'),sg.InputText(key='exportpath',default_text='C:/PIRL/data/MEPOXE0039/',size=(200,200))],
+        [sg.Text('DICOM Template Path:'),sg.InputText(key='dicom_template_path',size=(200,200))],
+        [sg.Text('Export Path:'),sg.InputText(key='exportpath',default_text='C:/tmp/',size=(200,200))],
         [sg.Button('Export Data',key='-EXPORT-'),sg.Checkbox('Copy pickle to Archive',default=True,key='-ARCHIVE-'),sg.Push(),sg.Button('Clear Cache',key='-CLEARCACHE-')]
     ]
 
@@ -931,7 +969,7 @@ if __name__ == "__main__":
 
 ## --------------- Load Pickle ------------------- ##       
         elif event == ('-LOADPICKLE-'):
-            pickle_path = sg.popup_get_text('Enter Pickle Path: ',default_text="C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241006/Mepo0039_240301.pkl")
+            pickle_path = sg.popup_get_text('Enter Pickle Path: ',default_text="C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241006/Mepo0039_240301.pkl").replace('"','')
             Vent1 = Vent_Analysis(pickle_path=pickle_path)
             window['-STATUS-'].update("Vent_Analysis pickle loaded",text_color='green')
             window['-INITIALIZE-'].update(button_color = 'green')
@@ -940,10 +978,10 @@ if __name__ == "__main__":
 
 ## --------------- INITIALIZE Button ------------------- ##
         elif event == ('-INITIALIZE-'):
-            DICOM_path = values['DICOMpath']
-            MASK_path = values['MASKpath']
-            TWIX_path = values['TWIXpath']
-            PROTON_path = values['PROTONpath']
+            DICOM_path = values['DICOMpath'].replace('"','')
+            MASK_path = values['MASKpath'].replace('"','')
+            TWIX_path = values['TWIXpath'].replace('"','')
+            PROTON_path = values['PROTONpath'].replace('"','')
             window['-CALCVDP-'].update(button_color = 'lightgray')
             window['-CALCCI-'].update(button_color = 'lightgray')
             window['-RUNTWIX-'].update(button_color = 'lightgray')
@@ -1075,8 +1113,12 @@ if __name__ == "__main__":
                 elif values['postalb_mepo']: fileName = f'{fileName}_postAlb';Vent1.metadata['treatment'] = 'postAlb'
             elif values['clinicalRadio']:
                 fileName = f"Clinical_{values['clinicalID']}_{Vent1.metadata['StudyDate'][2:]}_visit{values['clinicalvisitnumber']}"
-                if values['baseline']: fileName = f'{fileName}_baseline';Vent1.metadata['treatment'] = 'none'
-                elif values['albuterol']: fileName = f'{fileName}_Albuterol';Vent1.metadata['treatment'] = 'Albuterol'
+                if values['baseline']:
+                    fileName = f'{fileName}_baseline';Vent1.metadata['treatment'] = 'none'
+                    series_description = f"Vent_defect_VDP={np.round(Vent1.metadata['VDP'],1)}"
+                elif values['albuterol']:
+                    fileName = f'{fileName}_Albuterol';Vent1.metadata['treatment'] = 'Albuterol'
+                    series_description = f"VentBD_defect_VDP={np.round(Vent1.metadata['VDP'],1)}"
             print(f'-- FileName: {fileName} --')
             print(f'-- FilePath: {EXPORT_path} --')
             if not os.path.isdir(EXPORT_path):
@@ -1099,7 +1141,26 @@ if __name__ == "__main__":
             Vent1.dicom_to_json(Vent1.ds, json_path=os.path.join(EXPORT_path,f'{fileName}.json'))
             Vent1.pickleMe(pickle_path=os.path.join(EXPORT_path,f'{fileName}.pkl'))
             Vent1.screenShot(path=os.path.join(EXPORT_path,f'{fileName}.png'))
-            Vent1.exportDICOM(Vent1.ds,EXPORT_path,optional_text=fileName,forPACS=True)
+            dicom_template_path = values['dicom_template_path'].replace('"','')
+            print(dicom_template_path)
+            def get_slice_locations_from_folder(folder_path):
+                slice_locations = []
+                for filename in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, filename)
+                    try:
+                        ds = dicom.dcmread(file_path, stop_before_pixels=True)
+                        slice_location = getattr(ds, 'SliceLocation', None)
+                        slice_locations.append(float(slice_location))
+                    except Exception as e:
+                        print(f"Skipping file {filename}: {e}")
+                        continue
+                return slice_locations
+            SlicLocs = get_slice_locations_from_folder(os.path.dirname(dicom_template_path))
+            print(SlicLocs)
+            Vent1.exportDICOM(dicom_template_path=dicom_template_path,
+                              save_dir=f"{EXPORT_path}/defectDICOMS/",
+                              SlicLocs=SlicLocs,
+                              series_description=series_description)
             window['-STATUS-'].update("Data Successfully Exported...",text_color='green')
 
             if values['-ARCHIVE-'] == True:
