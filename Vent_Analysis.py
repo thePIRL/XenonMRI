@@ -7,6 +7,7 @@ import os
 import pickle # --------------------------- For Pickling and unpickling data
 from PIL import Image, ImageTk, ImageDraw, ImageFont # ---------- for arrayToImage conversion
 import pydicom as dicom # ----------------- for openSingleDICOM and openDICOMFolder
+from pydicom.uid import generate_uid
 from pydicom.dataset import Dataset # ----- for saving dicoms as PACS in exportDICOM()
 from scipy.signal import medfilt2d # ------ for calculateVDP
 import SimpleITK as sitk # ---------------- for N4 Bias Correection
@@ -526,6 +527,41 @@ class Vent_Analysis:
         cropped_A = A[rows_start:rows_end, cols_start:cols_end, slices_start:slices_end]
         return cropped_A, list(range(rows_start, rows_end)), list(range(cols_start, cols_end)), list(range(slices_start, slices_end))
 
+
+    def save_rgb_image_as_dicom(self, image: Image.Image, template_path: str, output_path: str, series_description: str):
+        # Convert PIL Image to NumPy array (H, W, 3)
+        print('...save_rgb_image_as_dicom called...')
+        rgb_array = np.array(image).astype(np.uint8)
+        print('...image converted to numpy...')
+        if rgb_array.ndim != 3 or rgb_array.shape[2] != 3:
+            raise ValueError("Image must be RGB with shape (H, W, 3)")
+        rows, cols, _ = rgb_array.shape
+        pixel_data = rgb_array.tobytes()  # Interleaved RGB (PlanarConfiguration=0)
+        # Load template DICOM
+        template = dicom.dcmread(template_path)
+        print('template dicom successfully read')
+        # Update DICOM header for RGB
+        template.SeriesDescription = series_description
+        template.Rows = rows
+        template.Columns = cols
+        template.SamplesPerPixel = 3
+        template.PhotometricInterpretation = 'RGB'
+        template.PlanarConfiguration = 0  # Interleaved
+        template.BitsAllocated = 8
+        template.BitsStored = 8
+        template.HighBit = 7
+        template.PixelRepresentation = 0
+        template.PixelData = pixel_data
+        # Update UIDs and timestamps
+        template.SOPInstanceUID = generate_uid()
+        template.SeriesInstanceUID = generate_uid()
+        template.StudyInstanceUID = generate_uid()
+        template.InstanceCreationDate = datetime.datetime.now().strftime('%Y%m%d')
+        template.InstanceCreationTime = datetime.datetime.now().strftime('%H%M%S.%f')
+        # Save the DICOM
+        template.save_as(output_path)
+        print('printout saved as dicom')
+
     def screenShot(self, path = 'C:/PIRL/data/screenShotTest.png', normalize95 = False):
         '''Creates and saves a montage image of all processed data images'''
         def normalize(x):
@@ -599,6 +635,12 @@ class Vent_Analysis:
             pass
         image.save(path, 'PNG')  # Save the image
         print(f'\033[32mScreenshot saved to {path}\033[37m')
+        try:
+            print(f"screenShot(): {self.dicom_template_path}")
+            print(f"screenShot(): {path}.dcm")
+            self.save_rgb_image_as_dicom(image, template_path=self.dicom_template_path, output_path=f"{path}.dcm",series_description=self.SeriesDescription)
+        except:
+            print('\033[33mExporting printout as DICOM failed...\033[37m')
 
     def process_RAW(self,filepath=None):
         '''Given a twix file, will extract the raw kSpace and reconstruct the image array.
@@ -1116,9 +1158,11 @@ if __name__ == "__main__":
                 if values['baseline']:
                     fileName = f'{fileName}_baseline';Vent1.metadata['treatment'] = 'none'
                     series_description = f"Vent_defect_VDP={np.round(Vent1.metadata['VDP'],1)}"
+                    Vent1.SeriesDescription = series_description
                 elif values['albuterol']:
                     fileName = f'{fileName}_Albuterol';Vent1.metadata['treatment'] = 'Albuterol'
                     series_description = f"VentBD_defect_VDP={np.round(Vent1.metadata['VDP'],1)}"
+                    Vent1.SeriesDescription = series_description
             print(f'-- FileName: {fileName} --')
             print(f'-- FilePath: {EXPORT_path} --')
             if not os.path.isdir(EXPORT_path):
@@ -1140,9 +1184,9 @@ if __name__ == "__main__":
             Vent1.exportNifti(EXPORT_path,fileName)
             Vent1.dicom_to_json(Vent1.ds, json_path=os.path.join(EXPORT_path,f'{fileName}.json'))
             Vent1.pickleMe(pickle_path=os.path.join(EXPORT_path,f'{fileName}.pkl'))
+            Vent1.dicom_template_path = values['dicom_template_path'].replace('"','')
+            print(f"GUI: {Vent1.dicom_template_path}")
             Vent1.screenShot(path=os.path.join(EXPORT_path,f'{fileName}.png'))
-            dicom_template_path = values['dicom_template_path'].replace('"','')
-            print(dicom_template_path)
             def get_slice_locations_from_folder(folder_path):
                 slice_locations = []
                 for filename in os.listdir(folder_path):
@@ -1155,9 +1199,9 @@ if __name__ == "__main__":
                         print(f"Skipping file {filename}: {e}")
                         continue
                 return slice_locations
-            SlicLocs = get_slice_locations_from_folder(os.path.dirname(dicom_template_path))
+            SlicLocs = get_slice_locations_from_folder(os.path.dirname(Vent1.dicom_template_path))
             print(SlicLocs)
-            Vent1.exportDICOM(dicom_template_path=dicom_template_path,
+            Vent1.exportDICOM(dicom_template_path=Vent1.dicom_template_path,
                               save_dir=f"{EXPORT_path}/defectDICOMS/",
                               SlicLocs=SlicLocs,
                               series_description=series_description)
