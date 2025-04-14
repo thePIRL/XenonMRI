@@ -527,41 +527,6 @@ class Vent_Analysis:
         cropped_A = A[rows_start:rows_end, cols_start:cols_end, slices_start:slices_end]
         return cropped_A, list(range(rows_start, rows_end)), list(range(cols_start, cols_end)), list(range(slices_start, slices_end))
 
-
-    def save_rgb_image_as_dicom(self, image: Image.Image, template_path: str, output_path: str, series_description: str):
-        # Convert PIL Image to NumPy array (H, W, 3)
-        print('...save_rgb_image_as_dicom called...')
-        rgb_array = np.array(image).astype(np.uint8)
-        print('...image converted to numpy...')
-        if rgb_array.ndim != 3 or rgb_array.shape[2] != 3:
-            raise ValueError("Image must be RGB with shape (H, W, 3)")
-        rows, cols, _ = rgb_array.shape
-        pixel_data = rgb_array.tobytes()  # Interleaved RGB (PlanarConfiguration=0)
-        # Load template DICOM
-        template = dicom.dcmread(template_path)
-        print('template dicom successfully read')
-        # Update DICOM header for RGB
-        template.SeriesDescription = series_description
-        template.Rows = rows
-        template.Columns = cols
-        template.SamplesPerPixel = 3
-        template.PhotometricInterpretation = 'RGB'
-        template.PlanarConfiguration = 0  # Interleaved
-        template.BitsAllocated = 8
-        template.BitsStored = 8
-        template.HighBit = 7
-        template.PixelRepresentation = 0
-        template.PixelData = pixel_data
-        # Update UIDs and timestamps
-        template.SOPInstanceUID = generate_uid()
-        template.SeriesInstanceUID = generate_uid()
-        template.StudyInstanceUID = generate_uid()
-        template.InstanceCreationDate = datetime.datetime.now().strftime('%Y%m%d')
-        template.InstanceCreationTime = datetime.datetime.now().strftime('%H%M%S.%f')
-        # Save the DICOM
-        template.save_as(output_path)
-        print('printout saved as dicom')
-
     def screenShot(self, path = 'C:/PIRL/data/screenShotTest.png', normalize95 = False):
         '''Creates and saves a montage image of all processed data images'''
         def normalize(x):
@@ -638,7 +603,41 @@ class Vent_Analysis:
         try:
             print(f"screenShot(): {self.dicom_template_path}")
             print(f"screenShot(): {path}.dcm")
-            self.save_rgb_image_as_dicom(image, template_path=self.dicom_template_path, output_path=f"{path}.dcm",series_description=self.SeriesDescription)
+            def copy_metadata(src_dcm):
+                new_dcm = Dataset()
+                for elem in src_dcm.iterall():
+                    if elem.tag != (0x7FE0, 0x0010):  # Exclude Pixel Data
+                        new_dcm.add(elem)
+                return new_dcm
+            rgb_array = np.array(image).astype(np.uint8)
+            #os.makedirs(f"{output_folder}/", exist_ok=True)
+            dicom_template = dicom.dcmread(self.dicom_template_path)
+            shared_series_uid = dicom.uid.generate_uid()
+            study_uid = dicom_template.StudyInstanceUID
+            dicom_file = copy_metadata(dicom_template)
+            dicom_file.SOPInstanceUID = dicom.uid.generate_uid()
+            dicom_file.InstanceNumber = 1
+            dicom_file.StudyInstanceUID = study_uid
+            dicom_file.SeriesInstanceUID = shared_series_uid
+            dicom_file.SeriesNumber = 999
+            dicom_file.SeriesDescription = series_description
+            dicom_file.ImageType = ["DERIVED", "SECONDARY"]
+            dicom_file.ContentDate = datetime.datetime.now().strftime("%Y%m%d")
+            dicom_file.ContentTime = datetime.datetime.now().strftime("%H%M%S.%f")[:13]  # HHMMSS.fff
+            dicom_file.Manufacturer = "MU PIRL pdf_to_dicom.py v250312"
+            dicom_file.SOPClassUID = dicom.uid.SecondaryCaptureImageStorage
+            dicom_file.Rows, dicom_file.Columns, _ = rgb_array.shape
+            dicom_file.PhotometricInterpretation = "RGB"
+            dicom_file.SamplesPerPixel = 3
+            dicom_file.PlanarConfiguration = 0
+            dicom_file.BitsAllocated = 8
+            dicom_file.BitsStored = 8
+            dicom_file.HighBit = 7
+            dicom_file.PixelRepresentation = 0
+            dicom_file.PixelData = rgb_array.tobytes()
+            dicom_file.is_little_endian = dicom_template.is_little_endian
+            dicom_file.is_implicit_VR = dicom_template.is_implicit_VR
+            dicom_file.save_as(f"{path}.dcm")
         except:
             print('\033[33mExporting printout as DICOM failed...\033[37m')
 
