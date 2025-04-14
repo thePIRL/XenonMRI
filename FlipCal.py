@@ -1089,19 +1089,19 @@ class FlipCal:
 
 
 
-U, S, Vt = np.linalg.svd(FA.DP, full_matrices=False)
-rank = 3
-U_reduced = U[:, :rank]
-S_reduced = np.diag(S[:rank])
-Vt_reduced = Vt[:rank, :]
-DP_approx = U_reduced @ S_reduced @ Vt_reduced
+# U, S, Vt = np.linalg.svd(FA.DP, full_matrices=False)
+# rank = 3
+# U_reduced = U[:, :rank]
+# S_reduced = np.diag(S[:rank])
+# Vt_reduced = Vt[:rank, :]
+# DP_approx = U_reduced @ S_reduced @ Vt_reduced
 
-plt.imshow(abs(DP_approx))
-plt.plot(DP_approx[:,100].real)
-plt.plot(FA.DP[:,100].real)
-plt.show()
+# plt.imshow(abs(DP_approx))
+# plt.plot(DP_approx[:,100].real)
+# plt.plot(FA.DP[:,100].real)
+# plt.show()
 
-A = FA.fit_all_DP_FIDs(DP_approx)
+# A = FA.fit_all_DP_FIDs(DP_approx)
 
 ### --------------------------------------------------------------------------------------------####
 ### -----------------------------------------Main GUI Script -----------------------------------####
