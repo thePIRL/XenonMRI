@@ -1090,7 +1090,11 @@ class FlipCal:
 
 
 # U, S, Vt = np.linalg.svd(FA.DP, full_matrices=False)
+<<<<<<< HEAD
 # rank = 3
+=======
+# rank = 1
+>>>>>>> fd4cf28ff901859cd6b12274a46e19b1b744d772
 # U_reduced = U[:, :rank]
 # S_reduced = np.diag(S[:rank])
 # Vt_reduced = Vt[:rank, :]
@@ -1101,7 +1105,11 @@ class FlipCal:
 # plt.plot(FA.DP[:,100].real)
 # plt.show()
 
+<<<<<<< HEAD
 # A = FA.fit_all_DP_FIDs(DP_approx)
+=======
+# A = FA.fit_all_DP_FIDs(data=DP_approx)
+>>>>>>> fd4cf28ff901859cd6b12274a46e19b1b744d772
 
 ### --------------------------------------------------------------------------------------------####
 ### -----------------------------------------Main GUI Script -----------------------------------####
