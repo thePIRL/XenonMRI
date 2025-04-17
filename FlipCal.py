@@ -15,6 +15,9 @@ import json # ------------------------------------- For exporting Twix Header
 import xml.etree.ElementTree as ET # -------------- To parse ISMRMRD header - parseISMRMRD()
 import pydicom # ---------------------------------- For saving plots as dicoms - 
 from pydicom.dataset import Dataset
+# -- below removes a pydicom.encoders.gdcm error when using pyinstaller
+from PyInstaller.utils.hooks import collect_submodules 
+hiddenimports = collect_submodules('pydicom.encoders.gdcm')
 
 class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
@@ -48,7 +51,8 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '250406_calibration' 
+        self.version = '250417_calibration' 
+        # -- 250417, numbers of noise, DP and GAS FIDs is now pulled from twix WIP memblock
         # -- 250406, DP diff evolution fit now uses bounds based on excitation frequency, also numpys are exported
         # -- 241230, indication now a patientInfo key
         # -- 241206, RBC2MEM corrected based on excitation profile
@@ -193,6 +197,7 @@ class FlipCal:
         deltaPhase = np.mod(np.abs(deltaPhase),180)
         deltaF = abs(self.DP_fit_params[0,1] - self.DP_fit_params[1,1])
         self.TE90 = int(self.scanParameters['TE'])*1e-3 + 1e3*(90 - deltaPhase)/(360 * deltaF) # -- in ms
+        print(f"TE90 = {self.TE90}")
         self.RBCppm = 1e6*(self.DP_fit_params[0,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         self.MEMppm = 1e6*(self.DP_fit_params[1,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         try:
@@ -246,6 +251,9 @@ class FlipCal:
         self.scanParameters['dwellTime'] = self.twix.hdr.Config['DwellTime']*1e-9 # in seconds
         self.scanParameters['FieldStrength'] = self.twix.hdr.Dicom['flMagneticFieldStrength'] # - B0 strength
         self.scanParameters['PulseDuration'] = float(self.twix.hdr.Meas['alTD'].split(' ')[0]) # - Pulse Duration in us
+        self.scanParameters['n_noise_FIDs'] = int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '1')]) # No of noise FIDs
+        self.scanParameters['n_DP_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '2')]) # No of DP FIDs
+        self.scanParameters['n_GAS_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '3')]) # No of GAS FIDs
         self.scanParameters['dissolvedFrequencyOffset'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '4')]
         self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
     
@@ -348,14 +356,17 @@ class FlipCal:
                 a = -a
             return a
         ## -- Separate NOISE, DP, and GAS arrays -- ##
-        self.noise = self.FID[:,0] # --------------------------- The noise RO
-        self.DP = self.FID[:,1:500] # -------------------------- All DP ROs
-        self.GAS = self.FID[:,500:] # -------------------------- All GAS ROs
+        n_noise_FIDs = self.scanParameters['n_noise_FIDs']
+        n_DP_FIDs = self.scanParameters['n_DP_FIDs']
+        n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
+        self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
+        self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
+        self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
         [U,S,VT] = np.linalg.svd(self.DP[:,self.scanParameters['nSkip']:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
-        self.RBCosc = VT[1,100:]*S[1] # ------------------------------------- The RBC oscillations
+        self.RBCosc = VT[1,:]*S[1] # ------------------------------------- The RBC oscillations
         # S[self.singular_values_to_keep:] = 0
         # Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
         # Smat[:len(S),:len(S)] = np.diag(S)
@@ -462,7 +473,7 @@ class FlipCal:
             print(f"\033[36mMEM:\033[37m {np.round(de[1,0]/de[1,0],3)} -- {np.round(de[1,1],0)} -- {np.round(de[1,2],1)} -- {np.round(de[1,3],1)} -- {np.round(de[1,4],1)}")
             print(f"\033[36mGAS:\033[37m {np.round(de[2,0]/de[1,0],3)} -- {np.round(de[2,1],0)} -- {np.round(de[2,2],1)} -- {np.round(de[2,3],1)} -- {np.round(de[2,4],1)}")
             _,_,RBC2MEMmag,RBC2MEMdix = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
-            print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},\n")
+            print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},\033[37m\n")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
     
