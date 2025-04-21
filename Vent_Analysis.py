@@ -497,7 +497,7 @@ class Vent_Analysis:
                 dicom_file.ImageOrientationPatient = [0,0,-1,1,0,0]  # Default Coronal
             dicom_file.is_little_endian = dicom_template.is_little_endian
             dicom_file.is_implicit_VR = dicom_template.is_implicit_VR
-            dicom_file.save_as(os.path.join(save_dir, f"dicom_{page_num}.dcm"))
+            dicom_file.save_as(os.path.join(save_dir, f"dicom_{page_num:03d}.dcm"))
     
     def cropToData(self, A, border=0,borderSlices=False):
         '''Given a 3D mask array, crops rows,cols,slices to only those with signal (useful for creating montage slides)'''
