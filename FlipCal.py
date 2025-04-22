@@ -52,7 +52,7 @@ class FlipCal:
                  matlab_path =    None,
                  ismrmrd_path =   None):
         self.version = '250417_calibration' 
-        # -- 250417, numbers of noise, DP and GAS FIDs is now pulled from twix WIP memblock
+        # -- 250417, indices of noise, DP and GAS FIDs is now pulled from twix WIP memblock
         # -- 250406, DP diff evolution fit now uses bounds based on excitation frequency, also numpys are exported
         # -- 241230, indication now a patientInfo key
         # -- 241206, RBC2MEM corrected based on excitation profile

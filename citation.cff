@@ -12,7 +12,7 @@ authors:
 - family-names: Parks
   given-names: Isabella
 title: "MU PIRL Xenon MRI Analysis Pipeline"
-version: "241030"
+version: "250421"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.1234
