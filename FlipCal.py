@@ -15,9 +15,6 @@ import json # ------------------------------------- For exporting Twix Header
 import xml.etree.ElementTree as ET # -------------- To parse ISMRMRD header - parseISMRMRD()
 import pydicom # ---------------------------------- For saving plots as dicoms - 
 from pydicom.dataset import Dataset
-# -- below removes a pydicom.encoders.gdcm error when using pyinstaller
-from PyInstaller.utils.hooks import collect_submodules 
-hiddenimports = collect_submodules('pydicom.encoders.gdcm')
 
 class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
@@ -200,6 +197,8 @@ class FlipCal:
         print(f"TE90 = {self.TE90}")
         self.RBCppm = 1e6*(self.DP_fit_params[0,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         self.MEMppm = 1e6*(self.DP_fit_params[1,1]-self.DP_fit_params[2,1])/self.newGasFrequency
+        self.RBCppm_dyn = 1e6*(self.RO_fit_params[0,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
+        self.MEMppm_dyn = 1e6*(self.RO_fit_params[1,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
         try:
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
@@ -356,9 +355,14 @@ class FlipCal:
                 a = -a
             return a
         ## -- Separate NOISE, DP, and GAS arrays -- ##
-        n_noise_FIDs = self.scanParameters['n_noise_FIDs']
-        n_DP_FIDs = self.scanParameters['n_DP_FIDs']
-        n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
+        try:
+            n_noise_FIDs = self.scanParameters['n_noise_FIDs']
+            n_DP_FIDs = self.scanParameters['n_DP_FIDs']
+            n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
+        except:
+            n_noise_FIDs = 1
+            n_DP_FIDs = 499
+            n_GAS_FIDs = 20
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
@@ -446,7 +450,7 @@ class FlipCal:
         def residual_de(A,t,S):
             newS = FIDfunc_cf(t,*A)
             return np.sum(np.concatenate([S.real - newS.real, S.imag - newS.imag])**2)
-
+        
         Gasfreq = self.scanParameters['GasFrequency'] # - Target Gas frequency from Twix Header
         DPfreq = self.scanParameters['dissolvedFrequencyOffset'] # - Target offset from Twix Header
         ppmOffset = DPfreq / (Gasfreq*1e-6)
