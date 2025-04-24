@@ -15,6 +15,8 @@ import json # ------------------------------------- For exporting Twix Header
 import xml.etree.ElementTree as ET # -------------- To parse ISMRMRD header - parseISMRMRD()
 import pydicom # ---------------------------------- For saving plots as dicoms - 
 from pydicom.dataset import Dataset
+from joblib import Parallel, delayed
+from contextlib import contextmanager
 
 class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
@@ -48,7 +50,8 @@ class FlipCal:
                  matlab_object =  None,
                  matlab_path =    None,
                  ismrmrd_path =   None):
-        self.version = '250417_calibration' 
+        self.version = '250424_calibration' 
+        # -- 250424, now uses joblib to paralellize fitting all DP FIDs
         # -- 250417, indices of noise, DP and GAS FIDs is now pulled from twix WIP memblock
         # -- 250406, DP diff evolution fit now uses bounds based on excitation frequency, also numpys are exported
         # -- 241230, indication now a patientInfo key
@@ -197,8 +200,6 @@ class FlipCal:
         print(f"TE90 = {self.TE90}")
         self.RBCppm = 1e6*(self.DP_fit_params[0,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         self.MEMppm = 1e6*(self.DP_fit_params[1,1]-self.DP_fit_params[2,1])/self.newGasFrequency
-        self.RBCppm_dyn = 1e6*(self.RO_fit_params[0,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
-        self.MEMppm_dyn = 1e6*(self.RO_fit_params[1,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
         try:
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
@@ -206,6 +207,8 @@ class FlipCal:
             print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\033[37m")
             print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\033[37m")
+            self.RBCppm_dyn = 1e6*(self.RO_fit_params[0,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
+            self.MEMppm_dyn = 1e6*(self.RO_fit_params[1,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
         except:
             print('RBC2MEM not not in attributes. Need to run fit_all_DP_FIDs() method to get wiggles.')
             print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD\033[37m")
@@ -480,7 +483,56 @@ class FlipCal:
             print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},\033[37m\n")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
-    
+
+    @staticmethod
+    def fit_DP_FID_static(FID, scanParameters):
+        t = np.arange(len(FID)) * scanParameters['dwellTime']
+        S = np.concatenate((FID.real, FID.imag))
+
+        def FIDfunc_cf(t, *params):
+            A = np.reshape(params, (3, 5))
+            frbc = (A[0, 0] * np.exp(1j * np.pi / 180 * A[0, 2]) *
+                    np.exp(1j * 2 * np.pi * t * A[0, 1]) *
+                    np.exp(-t * np.pi * A[0, 3]) *
+                    np.exp(-t**2 * A[0, 4]**2 * 4 * np.log(2)))
+            fmem = (A[1, 0] * np.exp(1j * np.pi / 180 * A[1, 2]) *
+                    np.exp(1j * 2 * np.pi * t * A[1, 1]) *
+                    np.exp(-t * np.pi * A[1, 3]) *
+                    np.exp(-t**2 * A[1, 4]**2 * 4 * np.log(2)))
+            fgas = (A[2, 0] * np.exp(1j * np.pi / 180 * A[2, 2]) *
+                    np.exp(1j * 2 * np.pi * t * A[2, 1]) *
+                    np.exp(-t * np.pi * A[2, 3]) *
+                    np.exp(-t**2 * A[2, 4]**2 * 4 * np.log(2)))
+            f = frbc + fmem + fgas
+            return np.concatenate((f.real, f.imag))
+
+        def residual_de(params, t, S):
+            newS = FIDfunc_cf(t, *params)
+            return np.sum((S - newS)**2)
+
+        from scipy.optimize import differential_evolution
+        Gasfreq = scanParameters['GasFrequency']
+        DPfreq = scanParameters['dissolvedFrequencyOffset']
+        RBCexpectedHz = (218 * Gasfreq * 1e-6) - DPfreq
+        MEMexpectedHz = (197 * Gasfreq * 1e-6) - DPfreq
+
+        lbounds = np.array([[0, RBCexpectedHz - 358, -180, 0, 0],
+                            [0, MEMexpectedHz - 358, -180, 0, 0],
+                            [0, -DPfreq - 1000, -180, 0, 0]])
+        ubounds = np.array([[1, RBCexpectedHz + 358, 180, 1000, 1],
+                            [1, MEMexpectedHz + 358, 180, 1000, 400],
+                            [1, -DPfreq + 1000, 180, 100, 1]])
+
+        bounds = [(lbounds.flatten()[i], ubounds.flatten()[i]) for i in range(15)]
+
+        for _ in range(5):
+            result = differential_evolution(residual_de, bounds, args=(t, S), popsize=3, tol=1e-9)
+            A = np.reshape(result.x, (3, 5))
+            if (RBCexpectedHz - 357 < A[0, 1] < RBCexpectedHz + 357) and \
+            (MEMexpectedHz - 357 < A[1, 1] < MEMexpectedHz + 357):
+                return A
+        return A  # fallback
+
     def fit_all_DP_FIDs(self,**kwargs):
         '''Fits every DP RO to the 3-resonance-decay model - This is where our RBC oscillations come from.
         OUTPUTS:
@@ -503,17 +555,15 @@ class FlipCal:
         start_time = time.time()
 
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
-        if(goFast):
-            print("\033[35mFitting all DP FIDs using Concurrent Futures. This may take awhile...\033[37m")
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                print('\n Generating futures list...')
-                futures = [executor.submit(self.fit_DP_FID, self.FID[:, RO+1],False) for RO in tqdm(range(498))]
-                print('Fitting Data...')
-                concurrent.futures.as_completed(futures)
-                RO = 0
-                for future in tqdm(futures):
-                    RO_fit_params[:, :, RO+1] = future.result()
-                    RO += 1
+        if goFast:
+            print("\033[35mFitting all DP FIDs using joblib + tqdm...\033[37m")
+            with tqdm_joblib(tqdm(desc="Fitting ROIs", total=data.shape[1])) as progress_bar:
+                results = Parallel(n_jobs=-1, backend='loky')(
+                    delayed(self.fit_DP_FID_static)(self.FID[:, i], self.scanParameters.copy())
+                    for i in range(data.shape[1])
+                )
+            for i, res in enumerate(results):
+                RO_fit_params[:, :, i] = res
         
         #-- Slow. Use this if you're not pressed for time and need your CPU freed up (about 20-30 min)
         if(not goFast):
@@ -1041,6 +1091,15 @@ class FlipCal:
             ismrmrd_data_set.write_xml_header(ismrmrd.xsd.ToXML(ismrmrd_header))
             ismrmrd_data_set.close()
             print(f'ISMRMRD h5 file written to {path}')
+
+    def completeExport(self, parent_dir='c:/tmp/',dummy_dicom_path=None):
+        SAVEpath = os.path.join(parent_dir,f"FlipCal_{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}/")
+        os.makedirs(SAVEpath,exist_ok=True)
+        self.pickleMe(pickle_path=os.path.join(SAVEpath,f"{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}.pkl"))
+        self.printout(save_path=os.path.join(SAVEpath,f"{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}.png"))
+        self.exportNumpy(path=os.path.join(SAVEpath,f"FlipCal_numpy"))  
+        if dummy_dicom_path is not None:
+            self.dicomPrintout(dummy_dicom_path=dummy_dicom_path,save_path=os.path.join(SAVEpath,f"FlipCal_DICOMS"))
     
     def extract_attributes(self, attr_dict, parent_key='', sep='_'):
         """Helper method which creates a single dictionary from an attribute dictionary"""
@@ -1099,7 +1158,23 @@ class FlipCal:
         return string
 
 
+@contextmanager
+def tqdm_joblib(tqdm_object):
+    from joblib.parallel import BatchCompletionCallBack
+    import joblib.parallel
 
+    class TqdmBatchCompletionCallback(BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_callback
+        tqdm_object.close()
 
 ### --------------------------------------------------------------------------------------------####
 ### -----------------------------------------Main GUI Script -----------------------------------####
