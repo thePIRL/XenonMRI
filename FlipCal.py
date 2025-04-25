@@ -184,7 +184,7 @@ class FlipCal:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
             print(f"\n \033[35m # ------ FlipCal ISMRMRD path {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
     
-    def process(self):
+    def process(self,wiggles=True):
         '''This does the entire Calibration processing pipeline /except/ the wiggles'''
         self.SVD()
         self.RMSnoise = np.std(np.concatenate((self.noise.real,self.noise.imag)))
@@ -200,6 +200,8 @@ class FlipCal:
         print(f"TE90 = {self.TE90}")
         self.RBCppm = 1e6*(self.DP_fit_params[0,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         self.MEMppm = 1e6*(self.DP_fit_params[1,1]-self.DP_fit_params[2,1])/self.newGasFrequency
+        if wiggles:
+            self.fit_all_DP_FIDs(goFast=True)
         try:
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
@@ -550,13 +552,13 @@ class FlipCal:
             print('You did not give me data. Using self.DP')
             internalDataMarker = True
             data = self.DP
-        goFast = kwargs.get('goFast', False)
+        goFast = kwargs.get('goFast', True)
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
 
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
         if goFast:
-            print("\033[35mFitting all DP FIDs using joblib + tqdm...\033[37m")
+            print("\033[35mFitting all DP FIDs on all CPU cores...\033[37m")
             with tqdm_joblib(tqdm(desc="Fitting ROIs", total=data.shape[1])) as progress_bar:
                 results = Parallel(n_jobs=-1, backend='loky')(
                     delayed(self.fit_DP_FID_static)(self.FID[:, i], self.scanParameters.copy())
@@ -567,7 +569,7 @@ class FlipCal:
         
         #-- Slow. Use this if you're not pressed for time and need your CPU freed up (about 20-30 min)
         if(not goFast):
-            print("\033[35mFitting all DP FIDs. This may take awhile...\033[37m")
+            print("\033[35mFitting all DP FIDs on 1 CPU core. This may take awhile...\033[37m")
             for RO in tqdm(range(data.shape[1])):
             #for RO in tqdm(range(3)):
                 RO_fit_params[:,:,RO] = self.fit_DP_FID(self.FID[:,RO],printResult=False)

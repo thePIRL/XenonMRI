@@ -19,7 +19,5 @@ GX_pdf = 'pull/from/folder?'
 
 FA = FlipCal.FlipCal(twix_path = calibration_twix_path)
 FA.process()
-FA.fit_all_DP_FIDs(goFast=True)
-FA.process()
 FA.completeExport(parent_dir=parent_dir,dummy_dicom_path=os.path.join(xenon_pre_folder,os.listdir(xenon_pre_folder)[0]))
 
