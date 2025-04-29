@@ -399,11 +399,12 @@ class FlipCal:
             return np.concatenate((x.real,x.imag))
         data = np.concatenate((FID.real,FID.imag))
         gas_fit_params, _ = curve_fit(gasFitFunction, self.t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
-        [A, f, phi, L, G] = gas_fit_params
-        newGasFrequency = self.scanParameters['GasFrequency'] + f
+        if gas_fit_params[0] < 0:
+            gas_fit_params[0] = -gas_fit_params[0]
+            gas_fit_params[2] = ((gas_fit_params[2] + 360) % 360) - 180
+        newGasFrequency = self.scanParameters['GasFrequency'] + gas_fit_params[1]
         print(f"\033[36mGasFID: Area -- Frequency [Hz] -- Phase [°] -- FWHML [Hz] -- FWHMG [Hz]\033[37m")
-        print(f"\033[36m        \033[37m {np.round(A,3)} --   {np.round(f,0)} --   {np.round(phi,1)} --   {np.round(L,1)} --   {np.round(G,1)}")
-        print(f"\033[34mGas FID is at frequency \033[32m{newGasFrequency}\033[34m Hz with L = {L} Hz, G = {G} Hz, ϕ = {phi}°\033[37m \n")
+        print(f"\033[36m        \033[37m {np.round(gas_fit_params[0],3)} --   {np.round(newGasFrequency,0)} ({np.round(gas_fit_params[1],0)}) --   {np.round(gas_fit_params[2],1)} --   {np.round(gas_fit_params[3],1)} --   {np.round(gas_fit_params[4],1)}")
         return gas_fit_params, newGasFrequency
     
     def getFlipAngle(self,Decay=None):
