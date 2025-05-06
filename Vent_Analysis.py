@@ -150,7 +150,7 @@ class Vent_Analysis:
                     try:
                         self.proton_ds, self.proton = self.openDICOMfolder(proton_path)
                     except:
-                        print('\033[31mOpening Xenon DICOM failed...\033[37m')
+                        print('\033[31mOpening Proton DICOM failed...\033[37m')
 
         ## ------- PICKLE LOAD ------- ##
         if pickle_path is not None:
