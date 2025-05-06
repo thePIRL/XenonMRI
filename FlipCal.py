@@ -1220,7 +1220,7 @@ if __name__ == "__main__":
                     [sg.Radio('Twix','filetype',key='twixfile',default=True),sg.Radio('Pickle','filetype',key='picklefile'),sg.Radio('ISMRMRD','filetype',key='ismrmrdfile'),sg.Radio('Matlab','filetype',key='matlabfile')],
                    [sg.Column(patient_data_column),sg.Canvas(key='-GASDECAY-'),sg.Canvas(key='-DPPLOT-')],
                    [sg.Canvas(key='-WIGGLES-')],
-                   [sg.Button('Process FlipCal',key='process'),sg.Button('Process Wiggles',key='wiggles')],
+                   [sg.Button('Process FlipCal (no wiggles)',key='process'),sg.Button('Process FlipCal (with wiggles)',key='wiggles')],
                    [sg.Text('Dummy Dicom Path'),sg.InputText(key='dummy_dicom_path',size=(100,1))],
                    [sg.Text('Save Directory'),sg.InputText(key='SAVEpath',default_text='C:/PIRL/data/FA/',size=(100,1)),sg.Button('Save',key='savedata')]]
     
@@ -1342,7 +1342,7 @@ if __name__ == "__main__":
 
 ## --------------- PROCESS --------------------------- ##
         elif event == ('process'):
-            FA.process()
+            FA.process(wiggles=False)
             print(f"\033[36mConsole printout for \033[32m{FA.patientInfo['PatientName']}\033[36m imaged at \033[32m{FA.scanParameters['scanDate']} \033[37m")
             print(f"\033[36mGas Frequency should be set to \033[32m{np.round(FA.newGasFrequency,0)}\033[37m")
             try:
@@ -1358,7 +1358,7 @@ if __name__ == "__main__":
             try:
                 updateWiggles()
             except:
-                FA.fit_all_DP_FIDs(goFast=False)
+                FA.process()
                 updateWiggles()
 ## --------------- SAVE PICKLE BUTTON --------------------------- ##
         elif event == ('savedata'):

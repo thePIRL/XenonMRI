@@ -29,7 +29,7 @@ def find_my_data(parent_dir):
         proton_pos_folder = os.path.join(parent_dir,"proton pre/DICOM/EXP00000/")
     else:
         proton_pos_folder = proton_pre_folder
-    calibration_twix_path = glob.glob(os.path.join(parent_dir,'*.dat'))[0]
+    calibration_twix_path = glob.glob(os.path.join(parent_dir,'*_dyn.dat'))[0]
     xenoview_pre_folder = os.path.join(parent_dir,"Xenoview_pre")
     xenoview_pos_folder = os.path.join(parent_dir,"Xenoview_post")
     xenoview_pre_pdf = os.path.join(parent_dir,"Xenoview_pre.pdf")
@@ -49,7 +49,8 @@ def find_my_data(parent_dir):
             GX_report)
 
 
-def PACS_runner(xenon_pre_folder,
+def PACS_runner(parent_dir,
+                xenon_pre_folder,
             xenon_pos_folder,
             proton_pre_folder,
             proton_pos_folder,
@@ -214,6 +215,7 @@ if __name__ == '__main__':
             window['text'].update('Fields are populated. Check to ensure they are accurate.',text_color='yellow')
         elif event == ('run'):
             window['text'].update('Assigning variables...',text_color='yellow')
+            parent_dir = values['parent_dir']
             xenon_pre_folder = values['xenon_pre_folder']
             xenon_pos_folder = values['xenon_pos_folder']
             proton_pre_folder= values['proton_pre_folder']
@@ -228,7 +230,8 @@ if __name__ == '__main__':
             xenoview_pre_VDP = values['xenoview_pre_VDP']
             xenoview_pos_VDP = values['xenoview_pos_VDP']
             window['text'].update('Calling PACs runner...',text_color='yellow')
-            PACS_runner(xenon_pre_folder,
+            PACS_runner(parent_dir,
+            xenon_pre_folder,
             xenon_pos_folder,
             proton_pre_folder,
             proton_pos_folder,
