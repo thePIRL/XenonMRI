@@ -74,13 +74,13 @@ def PACS_runner(parent_dir,
     os.makedirs(PACS_dir,exist_ok=True)
     print(f"\033[33mPACs directory created: {PACS_dir}\033[37m")    
 
-
-    ## -- Analyze the FlipCal -- ##
     dicom_pre_template_path = os.path.join(xenon_pre_folder,os.listdir(xenon_pre_folder)[0])
     dicom_pos_template_path = os.path.join(xenon_pos_folder,os.listdir(xenon_pos_folder)[0])
+
+    ## -- Analyze the FlipCal -- ##
     print(f"\033[33mDummy Dicom Paths Pre: {dicom_pre_template_path}, Post: {dicom_pos_template_path}.\033[37m")
     FA = FlipCal.FlipCal(twix_path = calibration_twix_path)
-    FA.process()
+    FA.process(wiggles=False)
     FA.completeExport(parent_dir=parent_dir,dummy_dicom_path=os.path.join(xenon_pre_folder,os.listdir(xenon_pre_folder)[0]))
     FA.dicomPrintout(dummy_dicom_path = dicom_pre_template_path,save_path = os.path.join(PACS_dir,'FlipCal'))
     print(f"\033[33mFlipCal processed successfully.\033[37m")
@@ -89,13 +89,17 @@ def PACS_runner(parent_dir,
     ## -- Do the in-house Vent Analysis -- ##
     VentPre = Vent_Analysis.Vent_Analysis(xenon_path=xenon_pre_folder,mask_path=pre_mask_folder,proton_path=proton_pre_folder)
     VentPre.calculate_VDP()
-    VentPre.completeExport(f"{parent_dir}/Vent_pre",dicom_template_path=dicom_pre_template_path,fileName=None,SlicLocs=None)
+    VentPre.dicom_template_path = dicom_pre_template_path
+    VentPre.completeExport(f"{parent_dir}/Vent_pre",dicom_template_path=dicom_pre_template_path,fileName=None,SlicLocs=None,series_description='Vent_printout')
+    VentPre.screenShot(path = os.path.join(PACS_dir,'Vent_pre_printout'), series_description = 'Vent_printout')
     print(f"\033[33mVentilation Pre processed successfully.\033[37m")
 
     VentPos = Vent_Analysis.Vent_Analysis(xenon_path=xenon_pos_folder,mask_path=pos_mask_folder,proton_path=proton_pos_folder)
     VentPos.calculate_VDP()
-    VentPos.completeExport(f"{parent_dir}/Vent_pos",dicom_template_path=dicom_pre_template_path,fileName=None,SlicLocs=None)
-    print(f"\033[33Ventilation Post processed successfully.\033[37m")
+    VentPos.dicom_template_path = dicom_pos_template_path
+    VentPos.completeExport(f"{parent_dir}/Vent_pos",dicom_template_path=dicom_pos_template_path,fileName=None,SlicLocs=None,series_description='VentBD_printout')
+    VentPos.screenShot(path = os.path.join(PACS_dir,'Vent_pos_printout'), series_description = 'VentBD_printout')
+    print(f"\033[33mVentilation Post processed successfully.\033[37m")
 
 
     ## -- Tile the Vents -- ##
@@ -244,4 +248,4 @@ if __name__ == '__main__':
             GX_report,
             xenoview_pre_VDP,
             xenoview_pos_VDP)
-            window['text'].update('Complete! Your Data has been PACSed!',text_color='green')
+            window['text'].update('Complete! Your Data has been PACSed!',text_color='#aaffaa')

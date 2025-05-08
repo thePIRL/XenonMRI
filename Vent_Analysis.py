@@ -193,13 +193,19 @@ class Vent_Analysis:
             maskFolder = tk.filedialog.askdirectory()
         dcm_filelist = [f for f in sorted(os.listdir(maskFolder)) if f.endswith('.dcm')]
         if len(dcm_filelist)==0:
-            print('files must not have .dcm extension. Listing all files in directory...')
+            print('No files with .dcm extension. Just pulling all files from folder...')
             dcm_filelist = [f for f in sorted(os.listdir(maskFolder))]
         ds = dicom.dcmread(os.path.join(maskFolder,dcm_filelist[0]))
         mask = np.zeros((ds.pixel_array.shape[0],ds.pixel_array.shape[1],len(dcm_filelist)))
+        self.slice_locations = []
         for f,k in zip(dcm_filelist,range(len(dcm_filelist))):
             ds = dicom.dcmread(os.path.join(maskFolder,f))
             mask[:,:,k] = ds.pixel_array
+            try:
+                slice_location = getattr(ds, 'SliceLocation', None)
+                self.slice_locations.append(float(slice_location))
+            except:
+                print(f'No slice location for image {k}')
         print(f'\033[32mI built a mask of shape {mask.shape}\033[37m')
         return ds, mask
 
@@ -509,7 +515,7 @@ class Vent_Analysis:
             dicom_file.is_implicit_VR = dicom_template.is_implicit_VR
             dicom_file.save_as(os.path.join(f"{save_dir}/VentDicoms", f"dicom_{page_num:03d}.dcm"))
     
-    def completeExport(self,EXPORT_path,dicom_template_path=None,fileName=None,SlicLocs=None):
+    def completeExport(self,EXPORT_path,dicom_template_path=None,fileName=None,SlicLocs=None,series_description=None):
             os.makedirs(EXPORT_path,exist_ok=True)
             if fileName is None:
                 fileName = f"VentAnalysis_{self.metadata['PatientName']}"
@@ -517,7 +523,10 @@ class Vent_Analysis:
             self.exportNifti(EXPORT_path,fileName)
             self.dicom_to_json(self.ds, json_path=os.path.join(EXPORT_path,f'{fileName}.json'))
             self.pickleMe(pickle_path=os.path.join(EXPORT_path,f'{fileName}.pkl'))
-            self.screenShot(os.path.join(EXPORT_path,f'{fileName}.png'))
+            if series_description is None:
+                self.screenShot(os.path.join(EXPORT_path,f'{fileName}.png'),series_description='Vent_printout')
+            else:
+                self.screenShot(os.path.join(EXPORT_path,f'{fileName}.png'),series_description=series_description)
             if dicom_template_path is not None:
                 self.exportDICOM(dicom_template_path=dicom_template_path,
                                 save_dir=EXPORT_path,
@@ -552,8 +561,9 @@ class Vent_Analysis:
         cropped_A = A[rows_start:rows_end, cols_start:cols_end, slices_start:slices_end]
         return cropped_A, list(range(rows_start, rows_end)), list(range(cols_start, cols_end)), list(range(slices_start, slices_end))
 
-    def screenShot(self, path = 'C:/PIRL/data/screenShotTest.png', normalize95 = False):
+    def screenShot(self, path = 'C:/PIRL/data/screenShotTest.png', series_description = 'Vent_printout', normalize95 = False):
         '''Creates and saves a montage image of all processed data images'''
+        print(f"\033[33mscreenShot(): called\033[37m")
         def normalize(x):
             if (np.max(x) - np.min(x)) == 0:
                 return x
@@ -626,8 +636,7 @@ class Vent_Analysis:
         image.save(path, 'PNG')  # Save the image
         print(f'\033[32mScreenshot saved to {path}\033[37m')
         try:
-            print(f"screenShot(): {self.dicom_template_path}")
-            print(f"screenShot(): {path}.dcm")
+            print(f"\033[33mscreenShot(): in dicom creator  {self.dicom_template_path} \n {path}.dcm \033[37m")
             def copy_metadata(src_dcm):
                 new_dcm = Dataset()
                 for elem in src_dcm.iterall():
