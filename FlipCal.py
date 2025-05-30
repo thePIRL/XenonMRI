@@ -5,7 +5,6 @@ import mapvbvd # ---------------------------------- for reading Twix files - __i
 import pickle # ----------------------------------- for pickling class attributes - pickleMe() and unpickleMe()
 from scipy.optimize import curve_fit # ------------ for fitting the Gas FID and decay - fit_Gas_FID() and getFlipAngle()
 from scipy.optimize import differential_evolution # for fitting the DP FID - fit_DP_FID()
-import concurrent.futures # ----------------------- for faster wiggles processing - fit_all_DP_FIDs()
 import time # ------------------------------------- for calculating process times - fit_all_DP_FIDs()
 from tqdm import tqdm # --------------------------- for console build - fit_all_DP_FIDs()
 import datetime # --------------------------------- for analysis timestamps and dicom creation
