@@ -110,29 +110,31 @@ class Vent_Analysis:
 
         ## ------- XENON DICOM or path ------- ##
         if xenon_array is not None:
+            print(f'\033[34mXenon array provided: {xenon_array.shape}\033[37m')
             self.HPvent = xenon_array
 
         if xenon_path is not None:
             try:
+                print('\033[34mXenon DICOM path provided. Opening DICOM...\033[37m')
                 self.ds, self.HPvent = self.openSingleDICOM(xenon_path)
             except:
-                try:
-                    self.ds, self.HPvent = self.openDICOMfolder(xenon_path)
-                except:
-                    print('\033[31mOpening Xenon DICOM failed...\033[37m')
+                print('\033[31mOpening Xenon DICOM failed...\033[37m')
 
             try:
+                print('\033[34mPulling Xenon DICOM Header\033[37m')
                 self.pullDICOMHeader()
             except:
                 print('\033[31mPulling Xenon DICOM Header failed...\033[37m')
 
         ## ------- MASK DICOM FOLDER or path ------- ##
         if mask_array is not None:
+            print(f'\033[34mMask array provided: {mask_array.shape}\033[37m')
             self.mask = mask_array
             self.mask_border = self.calculateBorder(self.mask)
 
         if mask_path is not None:
             try:
+                print('\033[34mLoading Mask and calculating border\033[37m')
                 _, self.mask = self.openDICOMfolder(mask_path)
                 self.mask_border = self.calculateBorder(self.mask)
             except:
@@ -141,17 +143,16 @@ class Vent_Analysis:
 
         ## ------- PROTON DICOM or path ------- ##
         if proton_array is not None: 
+            print(f'\033[34mProton array provided: {proton_array.shape}\033[37m')
             self.proton = proton_array
 
         if proton_path is not None:
             if proton_path is not None: 
                 try:
+                    print('\033[34mProton DICOM Path provided. Opening...\033[37m')
                     self.proton_ds, self.proton = self.openSingleDICOM(proton_path)
                 except:
-                    try:
-                        self.proton_ds, self.proton = self.openDICOMfolder(proton_path)
-                    except:
-                        print('\033[31mOpening Proton DICOM failed...\033[37m')
+                    print('\033[31mOpening Proton DICOM failed...\033[37m')
 
         ## ------- PICKLE LOAD ------- ##
         if pickle_path is not None:
@@ -167,9 +168,6 @@ class Vent_Analysis:
             self.metadata['LungVolume'] = np.sum(self.mask == 1)*np.prod(np.divide(self.vox,10))/1000
         except Exception as e:
             print(f"Error calculating Lung Volume in __init__() method, probly no vox attribute?: {e}")
-
-        # -- After all data is loaded calcualte lung volume (need mask and vox to do this)
-        self.metadata['LungVolume'] = np.sum(self.mask == 1)*np.prod(np.divide(self.vox,10))/1000
 
         
     def openSingleDICOM(self,dicom_path):        
@@ -193,20 +191,11 @@ class Vent_Analysis:
             print('\033[94mSelect the mask folder...\033[37m')
             maskFolder = tk.filedialog.askdirectory()
         dcm_filelist = [f for f in sorted(os.listdir(maskFolder)) if f.endswith('.dcm')]
-        if len(dcm_filelist)==0:
-            print('No files with .dcm extension. Just pulling all files from folder...')
-            dcm_filelist = [f for f in sorted(os.listdir(maskFolder))]
         ds = dicom.dcmread(os.path.join(maskFolder,dcm_filelist[0]))
         mask = np.zeros((ds.pixel_array.shape[0],ds.pixel_array.shape[1],len(dcm_filelist)))
-        self.slice_locations = []
         for f,k in zip(dcm_filelist,range(len(dcm_filelist))):
             ds = dicom.dcmread(os.path.join(maskFolder,f))
             mask[:,:,k] = ds.pixel_array
-            try:
-                slice_location = getattr(ds, 'SliceLocation', None)
-                self.slice_locations.append(float(slice_location))
-            except:
-                print(f'No slice location for image {k}')
         print(f'\033[32mI built a mask of shape {mask.shape}\033[37m')
         return ds, mask
 
@@ -217,18 +206,12 @@ class Vent_Analysis:
             try:
                 self.metadata[elem] = self.ds[elem].value
                 if 'pydicom' in str(type(self.metadata[elem])):
-                    self.metadata[elem] = str(self.metadata[elem]).replace("^","_")
+                    self.metadata[elem] = str(self.metadata[elem])
             except:
                 print(f'\033[31mNo {elem}\033[37m')
                 self.metadata[elem] = ''
 
         for k in range(100):
-            try:
-                self.vox = self.ds.PixelSpacing
-                break
-            except:
-                pass
-
             try:
                 self.vox = self.ds[0x5200, 0x9230][k]['PixelMeasuresSequence'][0].PixelSpacing
                 break
@@ -242,6 +225,8 @@ class Vent_Analysis:
         except:
             print('Slice spacing not in correct position in DICOM header. Please enter manually:')
             self.vox = [float(self.vox[0]),float(self.vox[1]),float(input())]
+
+        self.metadata['LungVolume'] = np.sum(self.mask == 1)*np.prod(np.divide(self.vox,10))/1000 # Lung Volum in Liters (voxel is converted to cm to vox vol is cc's)
 
     def calculateBorder(self,A):
         '''Given a binary array, returns the border of the binary volume (useful for creating a border from the mask for display)'''
@@ -299,10 +284,8 @@ class Vent_Analysis:
 
         ## -- Adaptive K-Means [Zha, 2016] -- ##
         xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)    #extracts all nonzero voxels from the N4image and flattens into a 1D array (vector)
-        # Compute histogram to find PL
         hist, _ = np.histogram(xenon_flattened, bins=10)                #histogram of vector
         PL = (hist[0] / np.sum(hist)) * 100                             #percentage of lung voxels in the lowest intensity bin so the 1st decile of the histogram
-        # Determine number of clusters for first round
         K1 = 5 if PL < 4 else 4                                         #if PL is <4%, K is 5 if not k=4 becuase fewer lower signal areas exist
         # First round KMeans
         KM1 = KMeans(n_clusters=K1, random_state=42)
@@ -327,7 +310,7 @@ class Vent_Analysis:
         self.metadata['VDP_Akm'] = 100*np.sum(self.defectArrayAkm > 0) / np.sum(self.mask)
 
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
-        self.defect_thresholds = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
+        self.defect_thresholdsAkm = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
 
         
         print('\033[32mcalculate_VDP ran successfully\033[37m')
@@ -484,7 +467,6 @@ class Vent_Analysis:
     
     def exportDICOM(self,dicom_template_path,save_dir = 'C:/PIRL/data/',SlicLocs = None,series_description = 'RPT_VentToDICOM'):
         '''Create and saves the Ventilation images with defectArray overlayed'''
-        os.makedirs(f"{save_dir}/VentDicoms",exist_ok=True)
         dicom_template = dicom.dcmread(dicom_template_path)
         def copy_metadata(src_dcm):
             new_dcm = Dataset()
@@ -548,26 +530,8 @@ class Vent_Analysis:
                 dicom_file.ImageOrientationPatient = [0,0,-1,1,0,0]  # Default Coronal
             dicom_file.is_little_endian = dicom_template.is_little_endian
             dicom_file.is_implicit_VR = dicom_template.is_implicit_VR
-            dicom_file.save_as(os.path.join(f"{save_dir}/VentDicoms", f"dicom_{page_num:03d}.dcm"))
+            dicom_file.save_as(os.path.join(save_dir, f"dicom_{page_num:03d}.dcm"))
     
-    def completeExport(self,EXPORT_path,dicom_template_path=None,fileName=None,SlicLocs=None,series_description=None):
-            os.makedirs(EXPORT_path,exist_ok=True)
-            if fileName is None:
-                fileName = f"VentAnalysis_{self.metadata['PatientName']}"
-            self.exportNumpys(EXPORT_path)
-            self.exportNifti(EXPORT_path,fileName)
-            self.dicom_to_json(self.ds, json_path=os.path.join(EXPORT_path,f'{fileName}.json'))
-            self.pickleMe(pickle_path=os.path.join(EXPORT_path,f'{fileName}.pkl'))
-            if series_description is None:
-                self.screenShot(os.path.join(EXPORT_path,f'{fileName}.png'),series_description='Vent_printout')
-            else:
-                self.screenShot(os.path.join(EXPORT_path,f'{fileName}.png'),series_description=series_description)
-            if dicom_template_path is not None:
-                self.exportDICOM(dicom_template_path=dicom_template_path,
-                                save_dir=EXPORT_path,
-                                SlicLocs=SlicLocs,
-                                series_description=f"Vent_VPD={np.round(self.metadata['VDP'],1)}")
-            
     def cropToData(self, A, border=0,borderSlices=False):
         '''Given a 3D mask array, crops rows,cols,slices to only those with signal (useful for creating montage slides)'''
         # Calculate the indices for non-zero slices, rows, and columns
@@ -596,9 +560,8 @@ class Vent_Analysis:
         cropped_A = A[rows_start:rows_end, cols_start:cols_end, slices_start:slices_end]
         return cropped_A, list(range(rows_start, rows_end)), list(range(cols_start, cols_end)), list(range(slices_start, slices_end))
 
-    def screenShot(self, path = 'C:/PIRL/data/screenShotTest.png', series_description = 'Vent_printout', normalize95 = False):
+    def screenShot(self, path = 'C:/PIRL/data/screenShotTest.png', normalize95 = False):
         '''Creates and saves a montage image of all processed data images'''
-        print(f"\033[33mscreenShot(): called\033[37m")
         def normalize(x):
             if (np.max(x) - np.min(x)) == 0:
                 return x
@@ -671,7 +634,8 @@ class Vent_Analysis:
         image.save(path, 'PNG')  # Save the image
         print(f'\033[32mScreenshot saved to {path}\033[37m')
         try:
-            print(f"\033[33mscreenShot(): in dicom creator  {self.dicom_template_path} \n {path}.dcm \033[37m")
+            print(f"screenShot(): {self.dicom_template_path}")
+            print(f"screenShot(): {path}.dcm")
             def copy_metadata(src_dcm):
                 new_dcm = Dataset()
                 for elem in src_dcm.iterall():
