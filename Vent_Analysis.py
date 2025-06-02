@@ -65,7 +65,8 @@ class Vent_Analysis:
                  pickle_dict = None,
                  pickle_path = None):
         
-        self.version = '250413_vent'
+        self.version = '250602_vent'
+        # 250602 - calculateVDP() now includes Adaptive k-means method (GMGD)
         # 250413 - exportDICOM() now export PACs-compatible dicoms using the xenon dicom header as template
         # 241113 - exportNumpys() added, pickle issues fixed, metadata saves pydicom objects as strings now
         # 241112 - fixed the missing pickle loader
@@ -258,7 +259,7 @@ class Vent_Analysis:
         self.metadata['DefectVolume'] = np.sum(self.defectArray == 1)*np.prod(np.divide(self.vox,10))/1000
 
         ## -- Linear Binning [Mu He, 2016] -- ##
-        _95th_percentile_signal_value = signal_list[int(len(signal_list)*.99)]
+        _99th_percentile_signal_value = signal_list[int(len(signal_list)*.99)]
         norm95th_vent = np.divide(self.N4HPvent,signal_list[int(len(signal_list)*.99)])
         self.defectArrayLB = ((norm95th_vent<=0.16)*1 + (norm95th_vent>0.16)*(norm95th_vent<=0.34)*2 + (norm95th_vent>0.34)*(norm95th_vent<=0.52)*3 + (norm95th_vent>0.52)*(norm95th_vent<=0.7)*4 + (norm95th_vent>0.7)*(norm95th_vent<=0.88)*5 + (norm95th_vent>0.88)*6)*self.mask
         self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1 + (self.defectArrayLB == 2)*1)/np.sum(self.mask)
@@ -277,10 +278,6 @@ class Vent_Analysis:
         defect_xenon_threshold = np.max(low_xenon[low_labels == secondlowest_cluster])
         self.defectArrayKM = (1*(self.N4HPvent<low_xenon_threshold) + 1*(self.N4HPvent<defect_xenon_threshold))*self.mask
         self.metadata['VDP_km'] = 100*np.sum((self.defectArrayKM >0)*1)/np.sum(self.mask)
-
-        mean_signal = np.mean(self.N4HPvent[self.mask>0])
-        self.defect_thresholds = [thresh, _95th_percentile_signal_value*0.34/mean_signal, low_xenon_threshold/mean_signal]
-
 
         ## -- Adaptive K-Means [Zha, 2016] -- ##
         xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)    #extracts all nonzero voxels from the N4image and flattens into a 1D array (vector)
@@ -310,7 +307,15 @@ class Vent_Analysis:
         self.metadata['VDP_Akm'] = 100*np.sum(self.defectArrayAkm > 0) / np.sum(self.mask)
 
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
+<<<<<<< HEAD
         self.defect_thresholdsAkm = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
+=======
+        self.defect_thresholds = {'MA': thresh,
+                                  'LB': _99th_percentile_signal_value*0.34/mean_signal,
+                                  'KM': low_xenon_threshold/mean_signal,
+                                  'AKM': np.max(C1_voxels) / mean_signal}
+        #self.defect_thresholds = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
+>>>>>>> upstream/main
 
         
         print('\033[32mcalculate_VDP ran successfully\033[37m')
@@ -760,12 +765,13 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 
 
 
-# ## -- Test Code -- ##
-DICOM_path = r'\\umh.edu\data\Radiology\Xenon_Studies\Studies\MEPO\MEPO_Studies\MEPOXE0039 - 240301\Pre-Alb\DICOM\24030116\46420001\48522586_Xe'
-MASK_path = r'\\umh.edu\data\Radiology\Xenon_Studies\Studies\MEPO\MEPO_Studies\MEPOXE0039 - 240301\Pre-Alb\DICOM\HPImg\Mask'
-PROTON_path = r'\\umh.edu\data\Radiology\Xenon_Studies\Studies\MEPO\MEPO_Studies\MEPOXE0039 - 240301\Pre-Alb\DICOM\HPImg\48522597'
-Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
-Vent1.calculate_VDP()
+# # ## -- Test Code -- ##
+# DICOM_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0039 - 240301/Pre-Alb/DICOM/24030116/46420001/48522586_Xe'
+# MASK_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0039 - 240301/Pre-Alb/DICOM/HPImg/Mask'
+# PROTON_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0039 - 240301/Pre-Alb/DICOM/HPImg/48522597'
+# Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
+# Vent1.calculate_VDP()
+
 # # ## -- Test Code -- ##
 # DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
 # MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
