@@ -92,6 +92,7 @@ class Vent_Analysis:
                         'VDP': '',
                         'VDP_lb': '',
                         'VDP_km': '',
+                        'VDP_Akm': '',
                         'LungVolume': '',
                         'DefectVolume': '',
                         'CI': '',
@@ -278,7 +279,7 @@ class Vent_Analysis:
         self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1 + (self.defectArrayLB == 2)*1)/np.sum(self.mask)
 
         ## -- K-Means [Miranda Kirby, 2012] -- ##
-        xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)
+        xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1) 
         KM = KMeans(n_clusters=4, random_state=42)
         labels = KM.fit_predict(xenon_flattened) # perform 4-cluster kMeans on all xenon signal
         cluster_means = [np.mean(xenon_flattened[labels == 0]),np.mean(xenon_flattened[labels == 1]),np.mean(xenon_flattened[labels == 2]),np.mean(xenon_flattened[labels == 3])]
@@ -294,6 +295,40 @@ class Vent_Analysis:
 
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
         self.defect_thresholds = [thresh, _95th_percentile_signal_value*0.34/mean_signal, low_xenon_threshold/mean_signal]
+
+
+        ## -- Adaptive K-Means [Zha, 2016] -- ##
+        xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)    #extracts all nonzero voxels from the N4image and flattens into a 1D array (vector)
+        # Compute histogram to find PL
+        hist, _ = np.histogram(xenon_flattened, bins=10)                #histogram of vector
+        PL = (hist[0] / np.sum(hist)) * 100                             #percentage of lung voxels in the lowest intensity bin so the 1st decile of the histogram
+        # Determine number of clusters for first round
+        K1 = 5 if PL < 4 else 4                                         #if PL is <4%, K is 5 if not k=4 becuase fewer lower signal areas exist
+        # First round KMeans
+        KM1 = KMeans(n_clusters=K1, random_state=42)
+        labels1 = KM1.fit_predict(xenon_flattened)                      #assigns cluster label to each voxel
+        cluster_means1 = [np.mean(xenon_flattened[labels1 == i]) for i in range(K1)]
+        C1_index = np.argmin(cluster_means1)
+        C1_voxels = xenon_flattened[labels1 == C1_index]               # voxels in the lower intensity cluster
+        # Second round KMeans on C1
+        KM2 = KMeans(n_clusters=4, random_state=42)                    #separates into 4 subclusters
+        labels2 = KM2.fit_predict(C1_voxels)
+        subcluster_means = [np.mean(C1_voxels[labels2 == i]) for i in range(4)]
+        sorted_indices = np.argsort(subcluster_means)                   #sorts from lowest to highest signal intensity
+        if PL < 4:
+            defect_subclusters = sorted_indices[:2]                     #defines number of subclusters depending on PL
+        elif 4 <= PL < 10:
+            defect_subclusters = sorted_indices[:3]                     #defines number of subclusters depending on PL
+        else:
+            defect_subclusters = sorted_indices[:1]                     #defines number of subclusters depending on PL
+        defect_xenon = C1_voxels[np.isin(labels2, defect_subclusters)]  #calculates mean for each subcluster
+        defect_threshold = np.max(defect_xenon)                         
+        self.defectArrayAkm = (self.N4HPvent < defect_threshold) * self.mask
+        self.metadata['VDP_Akm'] = 100*np.sum(self.defectArrayAkm > 0) / np.sum(self.mask)
+
+        mean_signal = np.mean(self.N4HPvent[self.mask>0])
+        self.defect_thresholds = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
+
         
         print('\033[32mcalculate_VDP ran successfully\033[37m')
 
@@ -761,6 +796,12 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 
 
 
+# ## -- Test Code -- ##
+DICOM_path = r'\\umh.edu\data\Radiology\Xenon_Studies\Studies\MEPO\MEPO_Studies\MEPOXE0039 - 240301\Pre-Alb\DICOM\24030116\46420001\48522586_Xe'
+MASK_path = r'\\umh.edu\data\Radiology\Xenon_Studies\Studies\MEPO\MEPO_Studies\MEPOXE0039 - 240301\Pre-Alb\DICOM\HPImg\Mask'
+PROTON_path = r'\\umh.edu\data\Radiology\Xenon_Studies\Studies\MEPO\MEPO_Studies\MEPOXE0039 - 240301\Pre-Alb\DICOM\HPImg\48522597'
+Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
+Vent1.calculate_VDP()
 # # ## -- Test Code -- ##
 # DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
 # MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
@@ -1254,7 +1295,7 @@ if __name__ == "__main__":
 
 '''Things to add (updated 3/27/2024):
  - CI colormap output in screenshot and GUI
- - Multiple VDPs calculated (linear binning, k-means) (LB done)
+ - Multiple VDPs calculated (linear binning, k-means) (LB done, Kmeans done, Adaptive Kmeans done)
  - show histogram?
  - edit mask
  - automatic segmentation using proton (maybe DL this?)
