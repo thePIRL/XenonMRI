@@ -65,7 +65,8 @@ class Vent_Analysis:
                  pickle_dict = None,
                  pickle_path = None):
         
-        self.version = '250413_vent'
+        self.version = '250602_vent'
+        # 250602 - calculateVDP() now includes Adaptive k-means method (GMGD)
         # 250413 - exportDICOM() now export PACs-compatible dicoms using the xenon dicom header as template
         # 241113 - exportNumpys() added, pickle issues fixed, metadata saves pydicom objects as strings now
         # 241112 - fixed the missing pickle loader
