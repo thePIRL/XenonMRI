@@ -279,6 +279,23 @@ class Vent_Analysis:
         self.defectArrayLB = ((norm95th_vent<=0.16)*1 + (norm95th_vent>0.16)*(norm95th_vent<=0.34)*2 + (norm95th_vent>0.34)*(norm95th_vent<=0.52)*3 + (norm95th_vent>0.52)*(norm95th_vent<=0.7)*4 + (norm95th_vent>0.7)*(norm95th_vent<=0.88)*5 + (norm95th_vent>0.88)*6)*self.mask
         self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1 + (self.defectArrayLB == 2)*1)/np.sum(self.mask)
 
+
+
+        ## -- Generalized Linear Binning [Mu He, 2020] -- ##
+        _99th_percentile_signal_value = signal_list[int(len(signal_list) * 0.99)]
+        norm_vent = np.divide(self.N4HPvent, _99th_percentile_signal_value)
+        boxcox_thresholds = [0.227, 0.477, 0.686, 0.828, 0.940]         # New non-Gaussian thresholds from Chan et al. (2020)
+        self.defectArrayGLB = (                                     #bins
+            (norm_vent <= boxcox_thresholds[0]) * 1 +
+            ((norm_vent > boxcox_thresholds[0]) & (norm_vent <= boxcox_thresholds[1])) * 2 +
+            ((norm_vent > boxcox_thresholds[1]) & (norm_vent <= boxcox_thresholds[2])) * 3 +
+            ((norm_vent > boxcox_thresholds[2]) & (norm_vent <= boxcox_thresholds[3])) * 4 +
+            ((norm_vent > boxcox_thresholds[3]) & (norm_vent <= boxcox_thresholds[4])) * 5 +
+            (norm_vent > boxcox_thresholds[4]) * 6
+        ) * self.mask
+        self.metadata['VDP_Glb'] = 100 * np.sum((self.defectArrayGLB == 1) + (self.defectArrayGLB == 2)) / np.sum(self.mask)
+
+
         ## -- K-Means [Miranda Kirby, 2012] -- ##
         xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1) 
         KM = KMeans(n_clusters=4, random_state=42)
@@ -296,10 +313,8 @@ class Vent_Analysis:
 
         ## -- Adaptive K-Means [Zha, 2016] -- ##
         xenon_flattened = self.N4HPvent[self.mask > 0].reshape(-1, 1)    #extracts all nonzero voxels from the N4image and flattens into a 1D array (vector)
-        # Compute histogram to find PL
         hist, _ = np.histogram(xenon_flattened, bins=10)                #histogram of vector
         PL = (hist[0] / np.sum(hist)) * 100                             #percentage of lung voxels in the lowest intensity bin so the 1st decile of the histogram
-        # Determine number of clusters for first round
         K1 = 5 if PL < 4 else 4                                         #if PL is <4%, K is 5 if not k=4 becuase fewer lower signal areas exist
         # First round KMeans
         KM1 = KMeans(n_clusters=K1, random_state=42)
@@ -323,9 +338,12 @@ class Vent_Analysis:
         self.defectArrayAkm = (self.N4HPvent < defect_threshold) * self.mask
         self.metadata['VDP_Akm'] = 100*np.sum(self.defectArrayAkm > 0) / np.sum(self.mask)
 
+
+
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
         self.defect_thresholds = {'MA': thresh,
                                   'LB': _99th_percentile_signal_value*0.34/mean_signal,
+                                  'GLB' : _99th_percentile_signal_value*boxcox_thresholds[1]/mean_signal,
                                   'KM': low_xenon_threshold/mean_signal,
                                   'AKM': np.max(C1_voxels) / mean_signal}
         #self.defect_thresholds = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
@@ -1303,6 +1321,3 @@ if __name__ == "__main__":
  - automatic segmentation using proton (maybe DL this?)
  - Denoise Option
  '''
-
-
-
