@@ -66,7 +66,7 @@ class Vent_Analysis:
                  pickle_path = None):
         
         self.version = '250602_vent'
-        # 250602 - calculateVDP() now includes Adaptive k-means method (GMGD)
+        # 250602 - calculateVDP() now includes Adaptive k-means and generalized linear binning methods (GMGD)
         # 250413 - exportDICOM() now export PACs-compatible dicoms using the xenon dicom header as template
         # 241113 - exportNumpys() added, pickle issues fixed, metadata saves pydicom objects as strings now
         # 241112 - fixed the missing pickle loader
@@ -92,6 +92,7 @@ class Vent_Analysis:
                         'SNR': '',
                         'VDP': '',
                         'VDP_lb': '',
+                        'VDP_glb': '',
                         'VDP_km': '',
                         'VDP_Akm': '',
                         'LungVolume': '',
@@ -278,8 +279,6 @@ class Vent_Analysis:
         norm95th_vent = np.divide(self.N4HPvent,signal_list[int(len(signal_list)*.99)])
         self.defectArrayLB = ((norm95th_vent<=0.16)*1 + (norm95th_vent>0.16)*(norm95th_vent<=0.34)*2 + (norm95th_vent>0.34)*(norm95th_vent<=0.52)*3 + (norm95th_vent>0.52)*(norm95th_vent<=0.7)*4 + (norm95th_vent>0.7)*(norm95th_vent<=0.88)*5 + (norm95th_vent>0.88)*6)*self.mask
         self.metadata['VDP_lb'] = 100*np.sum((self.defectArrayLB == 1)*1 + (self.defectArrayLB == 2)*1)/np.sum(self.mask)
-
-
 
         ## -- Generalized Linear Binning [Mu He, 2020] -- ##
         _99th_percentile_signal_value = signal_list[int(len(signal_list) * 0.99)]
