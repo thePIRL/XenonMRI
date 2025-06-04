@@ -144,47 +144,30 @@ class FlipCal:
         self.RBC2MEMmag_amp = '' # -The magnetization wiggle amplitude 
         ## -- Was a pickle or a pickle path provided? -- ##
         if pickle_path is not None:
-            #print(f'\n \033[35m # ------ Pickle path provided: {pickle_path}. ------ #\033[37m')
-            try:
-                with open(pickle_path, 'rb') as file:
-                    pickle_dict = pickle.load(file)
-            except:
-                print('\033[31mOpening Pickle from path and building arrays failed...\033[37m')
-        
+            with open(pickle_path, 'rb') as file:
+                pickle_dict = pickle.load(file)
         if pickle_dict is not None:
             self.unPickleMe(pickle_dict)
-            print(f"\n \033[35m # ------ FlipCal pickle {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
-        
-        ## -- Was a twix object or path provided?
         if twix_path is not None:
             self.twix = mapvbvd.mapVBVD(twix_path)
             self.parseTwix()
-            print(f"\n \033[35m# ------ FlipCal Twix Path {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
-        
         if twix_object is not None:
             self.twix = twix_object      
             self.parseTwix()
-            print(f"\n \033[35m# ------ FlipCal Twix object {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
-        
-        ## -- Was a matlab object or path provided?
         if matlab_object is not None:
             self.matlab = matlab_object
             self.parseMatlab()
-            print(f"\n \033[35m# ------ FlipCal MatLAb object {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
-        
         if matlab_path is not None:
             import scipy.io
             self.matlab = scipy.io.loadmat(matlab_path)
             self.parseMatlab()
-            print(f"\n \033[35m # ------ FlipCal MatLab path {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
-        
-        ## -- Was a twix object or path provided?
         if ismrmrd_path is not None:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
-            print(f"\n \033[35m # ------ FlipCal ISMRMRD path {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
+        print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
     
     def process(self,wiggles=True):
-        '''This does the entire Calibration processing pipeline /except/ the wiggles'''
+        '''This does the entire Calibration processing pipeline'''
+        # 1) perform SVD to create FID objects: noise, DP, GAS, DPfid, DPdecay, RBCosc, GASfid, gasDecay
         self.SVD()
         self.RMSnoise = np.std(np.concatenate((self.noise.real,self.noise.imag)))
         self.gas_fit_params, self.newGasFrequency = self.fit_GAS_FID()
@@ -374,7 +357,7 @@ class FlipCal:
         [U,S,VT] = np.linalg.svd(self.DP[:,self.scanParameters['nSkip']:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
-        self.RBCosc = VT[1,:]*S[1] # ------------------------------------- The RBC oscillations
+        self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
         # S[self.singular_values_to_keep:] = 0
         # Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
         # Smat[:len(S),:len(S)] = np.diag(S)

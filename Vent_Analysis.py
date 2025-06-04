@@ -337,8 +337,7 @@ class Vent_Analysis:
         self.defectArrayAkm = (self.N4HPvent < defect_threshold) * self.mask
         self.metadata['VDP_Akm'] = 100*np.sum(self.defectArrayAkm > 0) / np.sum(self.mask)
 
-
-
+        #store thresholds for comparison (thresholds are given in fractions of whole-lung signal mean)
         mean_signal = np.mean(self.N4HPvent[self.mask>0])
         self.defect_thresholds = {'MA': thresh,
                                   'LB': _99th_percentile_signal_value*0.34/mean_signal,
@@ -347,8 +346,7 @@ class Vent_Analysis:
                                   'AKM': np.max(C1_voxels) / mean_signal}
         #self.defect_thresholds = [PL, defect_threshold / mean_signal, np.max(C1_voxels) / mean_signal]
 
-        
-        print('\033[32mcalculate_VDP ran successfully\033[37m')
+        print('\033[32mcalculate_VDP() ran successfully\033[37m')
 
     def calculate_CI(self):
         '''Calculates the Cluster Index Array and reports the subject's cluster index (CI)'''
@@ -402,18 +400,15 @@ class Vent_Analysis:
 
 
     def N4_bias_correction(self,HPvent, mask):
-        '''Performs N4itk Bias Correction'''
+        '''Performs N4itk Bias Correction. Inputs signal array and mask, outputs bias-corrected signal array'''
         start_time = time.time()
         print('Performing Bias Correction...')
-
         # Convert NumPy arrays to SimpleITK images
         image = sitk.GetImageFromArray(HPvent.astype(np.float32))
         mask = sitk.GetImageFromArray(mask.astype(np.float32))
-
         #Cast to correct format for SimpleITK
         image = sitk.Cast(image, sitk.sitkFloat32)
         mask = sitk.Cast(mask, sitk.sitkUInt8)
-
         #Run Bias Correction
         corrector = sitk.N4BiasFieldCorrectionImageFilter()
         corrected_image = corrector.Execute(image, mask)
