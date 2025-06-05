@@ -106,6 +106,7 @@ class FlipCal:
                          'n_FIDs_to_steady_state': 100,
                          'n_RO_pts_to_skip': 2}
         
+        self.FID = '' # ----------- The complete 2D array of acquired FIDs (typically 512 rows x 520 cols)
         # -- Created Attributes in SVD() -- ##
         self.singular_values_to_keep = 2
         self.noise = '' # --------- Single noise FID (column 0 of FID) 
@@ -164,7 +165,10 @@ class FlipCal:
             self.parseMatlab()
         if ismrmrd_path is not None:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
-        print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
+        if self.FID == '':
+            print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
+        else:
+            print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
     
     def process(self,wiggles=True):
         '''This does the entire Calibration processing pipeline'''
@@ -461,7 +465,6 @@ class FlipCal:
             else:
                 print(f"Refitting {fit_iteration}/5.  RBC:{de[0,1]}  MEM:{de[1,1]}")
 
-        print('NEWOCDE5')
         if(printResult):
             print(f"\033[33m --- FIT DP FID --- \033[37m")
             print(f'\033[36mThis experiment excited at \033[32m{DPfreq} Hz ({np.round(ppmOffset,0)} ppm)\033[36m higher than Gas.\033[37m')
