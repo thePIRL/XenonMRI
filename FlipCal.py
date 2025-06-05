@@ -603,6 +603,100 @@ class FlipCal:
             return 2*np.mean(np.abs(hilb)) # times 2 for Pk-pk
         except:
             print('You gotta run fit_all_DP_FIDs() first...')
+
+
+    def adjust_DP_params(self):
+        import PySimpleGUI as sg
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        import matplotlib.pyplot as plt
+
+        temp_DP_fit_params = self.DP_fit_params.copy()
+
+        sg.theme('LightGrey1')
+        windowLayout = [
+            [sg.Canvas(key='-DPPLOT-')],
+            [sg.Text('Mem A'), sg.InputText(key='mem_a', default_text=self.DP_fit_params[1,0], size=(20,1)),sg.Button('-',key='mem_a_down'),sg.Button('+',key='mem_a_up')],
+            [sg.Text('Mem w'), sg.InputText(key='mem_w', default_text=self.DP_fit_params[1,1], size=(20,1)),sg.Button('-',key='mem_w_down'),sg.Button('+',key='mem_w_up')],
+            [sg.Text('Mem L'), sg.InputText(key='mem_L', default_text=self.DP_fit_params[1,3], size=(20,1)),sg.Button('-',key='mem_L_down'),sg.Button('+',key='mem_L_up')],
+            [sg.Text('Mem G'), sg.InputText(key='mem_G', default_text=self.DP_fit_params[1,4], size=(20,1)),sg.Button('-',key='mem_G_down'),sg.Button('+',key='mem_G_up')],
+            [sg.Button('Update', key='update')]
+        ]
+
+        def draw_figure(canvas_elem, figure):
+            canvas = canvas_elem.TKCanvas
+            figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+            figure_canvas_agg.draw()
+            figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
+            return figure_canvas_agg
+
+        fig, ax = plt.subplots(figsize=(6, 2.5))
+        fig_agg = None
+
+        def updatePlot(temp_DP_fit_params):
+            nonlocal fig_agg
+            ax.clear()
+            ax.plot(self.t, self.DPfid, label='Original DP FID')
+
+            t = np.arange(0, 512) * self.scanParameters['dwellTime']
+            S = (self.FIDFitfunction(t, *temp_DP_fit_params[0,:]) +
+                self.FIDFitfunction(t, *temp_DP_fit_params[1,:]) +
+                self.FIDFitfunction(t, *temp_DP_fit_params[2,:]))
+            ax.plot(t, S, label='Fitted Signal')
+            ax.legend()
+            fig.tight_layout()
+
+            if fig_agg:
+                fig_agg.get_tk_widget().forget()
+                plt.close('all')
+
+            fig_agg = draw_figure(window['-DPPLOT-'], fig)
+
+        window = sg.Window('adjust_DP_params()', windowLayout,
+                        return_keyboard_events=True,
+                        margins=(0, 0), finalize=True,
+                        size=(1000, 550), resizable=True)
+
+        updatePlot(temp_DP_fit_params)
+
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED:
+                break
+            elif event == 'mem_a_up':
+                    temp_DP_fit_params[1,0] = temp_DP_fit_params[1,0] + 1e-6
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_a_down':
+                    temp_DP_fit_params[1,0] = temp_DP_fit_params[1,0] - 1e-6
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_w_up':
+                    temp_DP_fit_params[1,1] = temp_DP_fit_params[1,1] + 10
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_w_down':
+                    temp_DP_fit_params[1,1] = temp_DP_fit_params[1,1] - 10
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_L_up':
+                    temp_DP_fit_params[1,3] = temp_DP_fit_params[1,3] + 10
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_L_down':
+                    temp_DP_fit_params[1,3] = temp_DP_fit_params[1,3] - 10
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_G_up':
+                    temp_DP_fit_params[1,4] = temp_DP_fit_params[1,4] + 10
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'mem_G_down':
+                    temp_DP_fit_params[1,4] = temp_DP_fit_params[1,4] - 10
+                    updatePlot(temp_DP_fit_params)  #GPT
+            elif event == 'update':
+                try:  #GPT
+                    temp_DP_fit_params[1,0] = float(values['mem_a'])  #GPT
+                    temp_DP_fit_params[1,1] = float(values['mem_w'])  #GPT
+                    updatePlot(temp_DP_fit_params)  #GPT
+                except ValueError:  #GPT
+                    sg.popup("Invalid input. Please enter numeric values.")  #GPT
+
+        window.close()  #GPT
+        return temp_DP_fit_params
+
     
     ## ------ Plot Draw Functions ------ ##
     def draw_GAS_phasor(self,ax4):
