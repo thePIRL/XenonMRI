@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mapvbvd # ---------------------------------- for reading Twix files - __init__()
 import pickle # ----------------------------------- for pickling class attributes - pickleMe() and unpickleMe()
 from scipy.optimize import curve_fit # ------------ for fitting the Gas FID and decay - fit_Gas_FID() and getFlipAngle()
-from scipy.optimize import differential_evolution # for fitting the DP FID - fit_DP_FID()
+from scipy.optimize import differential_evolution, least_squares # for fitting the DP FID - fit_DP_FID()
 import time # ------------------------------------- for calculating process times - fit_all_DP_FIDs()
 from tqdm import tqdm # --------------------------- for console build - fit_all_DP_FIDs()
 import datetime # --------------------------------- for analysis timestamps and dicom creation
@@ -103,7 +103,8 @@ class FlipCal:
                          'dwellTime': '',
                          'FieldStrength': '',
                          'FOV': '',
-                         'nSkip': 100}
+                         'n_FIDs_to_steady_state': 100,
+                         'n_RO_pts_to_skip': 2}
         
         # -- Created Attributes in SVD() -- ##
         self.singular_values_to_keep = 2
@@ -241,7 +242,7 @@ class FlipCal:
         self.scanParameters['n_DP_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '2')]) # No of DP FIDs
         self.scanParameters['n_GAS_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '3')]) # No of GAS FIDs
         self.scanParameters['dissolvedFrequencyOffset'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '4')]
-        self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
+        self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
     
     def parseMatlab(self):
         '''Note that the newest version of the matlab Processing code (8/2024 and later) contains
@@ -264,7 +265,7 @@ class FlipCal:
         self.RO_fit_params[:,0,:] = self.matlab['ROfitParams'][:,1,:]
         self.RO_fit_params[:,1,:] = self.matlab['ROfitParams'][:,0,:]
         self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
-        self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['nSkip']:])
+        self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['n_FIDs_to_steady_state']:])
         self.flipAngleFitParams = self.matlab['fitparams'][0]
         self.flip_angle = self.flipAngleFitParams[1]*180/np.pi
         self.flip_err = 0
@@ -278,7 +279,7 @@ class FlipCal:
             F[:int(len(S)/2 + 1)] = 0
             H = np.fft.ifft(np.fft.fftshift(F))
             return H
-        hilb = hilbert(self.RBC2MEM[self.scanParameters['nSkip']:])
+        hilb = hilbert(self.RBC2MEM[self.scanParameters['n_FIDs_to_steady_state']:])
         self.RBC2MEMamp = np.mean(np.abs(hilb))
         try:
             self.DP_fit_params = self.matlab['disFit']
@@ -346,15 +347,18 @@ class FlipCal:
             n_noise_FIDs = self.scanParameters['n_noise_FIDs']
             n_DP_FIDs = self.scanParameters['n_DP_FIDs']
             n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
+            n_RO_pts_to_skip = self.scanParameters['n_RO_pts_to_skip']
         except:
+            print('\033[33mn_noise_FIDs, n_DP_FIDs, n_GAS_FIDs, and/or n_RO_pts_to_skip are not in scanParameter dict. Defaulting to values 1, 499, 20, and 2 respectively...')
             n_noise_FIDs = 1
             n_DP_FIDs = 499
             n_GAS_FIDs = 20
+            n_RO_pts_to_skip = 2
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
-        [U,S,VT] = np.linalg.svd(self.DP[:,self.scanParameters['nSkip']:])
+        [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,self.scanParameters['n_FIDs_to_steady_state']:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
         self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
@@ -363,7 +367,7 @@ class FlipCal:
         # Smat[:len(S),:len(S)] = np.diag(S)
         # self.smoothDP = U @ Smat  @ VT #our experience shows this SVDing to denoise doesn't really help much
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
-        [U,S,VT] = np.linalg.svd(self.GAS)
+        [U,S,VT] = np.linalg.svd(self.GAS[n_RO_pts_to_skip:,:])
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
         self.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
     
@@ -409,12 +413,12 @@ class FlipCal:
         except:
             print(f"\033[36m---Either referenceVoltage or FlipAngle is not in scanParameters\033[37m \n")
     
-    def fit_DP_FID(self,FID=None,printResult = True):
+    def fit_DP_FID(self,FID=None,printResult = True,n_pts_to_skip = 10):
         '''Give it a DP FID, and it will fit to the 3-resonance-decay model and 
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
             FID = self.DPfid
-        t = np.arange(len(FID)) * self.scanParameters['dwellTime']
+        t = self.t
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
@@ -439,7 +443,7 @@ class FlipCal:
         def residual_de(A,t,S):
             newS = FIDfunc_cf(t,*A)
             return np.sum(np.concatenate([S.real - newS.real, S.imag - newS.imag])**2)
-        
+
         Gasfreq = self.scanParameters['GasFrequency'] # - Target Gas frequency from Twix Header
         DPfreq = self.scanParameters['dissolvedFrequencyOffset'] # - Target offset from Twix Header
         ppmOffset = DPfreq / (Gasfreq*1e-6)
@@ -456,7 +460,8 @@ class FlipCal:
                 break
             else:
                 print(f"Refitting {fit_iteration}/5.  RBC:{de[0,1]}  MEM:{de[1,1]}")
-        
+
+        print('NEWOCDE5')
         if(printResult):
             print(f"\033[33m --- FIT DP FID --- \033[37m")
             print(f'\033[36mThis experiment excited at \033[32m{DPfreq} Hz ({np.round(ppmOffset,0)} ppm)\033[36m higher than Gas.\033[37m')
