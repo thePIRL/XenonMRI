@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import mapvbvd # ---------------------------------- for reading Twix files - __init__()
 import pickle # ----------------------------------- for pickling class attributes - pickleMe() and unpickleMe()
 from scipy.optimize import curve_fit # ------------ for fitting the Gas FID and decay - fit_Gas_FID() and getFlipAngle()
-from scipy.optimize import differential_evolution, least_squares # for fitting the DP FID - fit_DP_FID()
+from scipy.optimize import differential_evolution, minimize # for fitting the DP FID - fit_DP_FID()
 import time # ------------------------------------- for calculating process times - fit_all_DP_FIDs()
 from tqdm import tqdm # --------------------------- for console build - fit_all_DP_FIDs()
 import datetime # --------------------------------- for analysis timestamps and dicom creation
@@ -68,7 +68,7 @@ class FlipCal:
         # -- input data to be cast to attributes -- ##
         self.twix = '' # ---------- Note that the twix object itself cannot be pickled, but the entire header can
         self.matlab = ''
-        self.FID = '' # ----------- Full FlipCal matrix
+        self.FID = '' # ----------- The complete 2D array of acquired FIDs (typically 512 rows x 520 cols)
         self.t = '' # ------------- The time vector for a RO (dwellTime*(0:511))
         self.patientInfo = {'PatientName': '', # -- Most of the metadata is pulled in one of the parse functions
                          'PatientID': '',
@@ -106,7 +106,6 @@ class FlipCal:
                          'n_FIDs_to_steady_state': 100,
                          'n_RO_pts_to_skip': 2}
         
-        self.FID = '' # ----------- The complete 2D array of acquired FIDs (typically 512 rows x 520 cols)
         # -- Created Attributes in SVD() -- ##
         self.singular_values_to_keep = 2
         self.noise = '' # --------- Single noise FID (column 0 of FID) 
@@ -167,6 +166,9 @@ class FlipCal:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
         if self.FID == '':
             print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
+            self.FID = np.zeros((512,520))
+            self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':43081625, 'dissolvedFrequencyOffset':7090, 'pulseDuration': 670,'n_RO_pts_to_skip':0}
+            self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
         else:
             print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
     
@@ -212,6 +214,7 @@ class FlipCal:
         self.twix.image.squeeze = True # --- remove singleton dimensions of data array
         self.twix.image.removeOS = False # - Keep all 512 datapoints (don't reduce to 256)
         self.FID = self.twix.image[''] # --- the FID data array (index 0 = noise, 1:499 = DP, 500:519 = GAS)
+        self.FID = self.FID.astype(np.complex128)  # Uses more memory but better for SVD and fitting
         self.calibration_dict = self.extract_attributes(self.twix.hdr) ## -- converts twix header to dictionary
         self.patientInfo['PatientName'] = self.twix.hdr.Config['PatientName']
         self.patientInfo['PatientDOB'] = self.twix.hdr.Config['PatientBirthDay']
@@ -352,17 +355,19 @@ class FlipCal:
             n_DP_FIDs = self.scanParameters['n_DP_FIDs']
             n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
             n_RO_pts_to_skip = self.scanParameters['n_RO_pts_to_skip']
+            n_pts_to_steady_state = self.scanParameters['n_FIDs_to_steady_state']
         except:
-            print('\033[33mn_noise_FIDs, n_DP_FIDs, n_GAS_FIDs, and/or n_RO_pts_to_skip are not in scanParameter dict. Defaulting to values 1, 499, 20, and 2 respectively...')
+            print('\033[33mn_noise_FIDs, n_DP_FIDs, n_GAS_FIDs, and/or n_RO_pts_to_skip are not in scanParameter dict. Defaulting to values 1, 499, 20, and 0 respectively...')
             n_noise_FIDs = 1
             n_DP_FIDs = 499
             n_GAS_FIDs = 20
-            n_RO_pts_to_skip = 2
+            n_RO_pts_to_skip = 0
+            n_pts_to_steady_state = 100
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
-        [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,self.scanParameters['n_FIDs_to_steady_state']:])
+        [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,n_pts_to_steady_state:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
         self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
@@ -417,12 +422,15 @@ class FlipCal:
         except:
             print(f"\033[36m---Either referenceVoltage or FlipAngle is not in scanParameters\033[37m \n")
     
-    def fit_DP_FID(self,FID=None,printResult = True,n_pts_to_skip = 10):
+    def fit_DP_FID(self,t=None,FID=None,printResult = True):
         '''Give it a DP FID, and it will fit to the 3-resonance-decay model and 
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
             FID = self.DPfid
-        t = self.t
+            print('No FID given, using attribute DPfid')
+        if t is None: # -- If no FID is input, it uses the SVD DPfid
+            t = self.t
+            print('No t given, using attribute t')
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
@@ -454,7 +462,7 @@ class FlipCal:
         RBCexpectedHz = (218*Gasfreq*1e-6) - DPfreq
         MEMexpectedHz = (197*Gasfreq*1e-6) - DPfreq
         lbounds = np.array([[0,RBCexpectedHz-358,-180,0,0],[0,MEMexpectedHz-358,-180,0,0],[0,-DPfreq-1000,-180,0,0]])
-        ubounds = np.array([[1,RBCexpectedHz+358,180,1000,1],[1,MEMexpectedHz+358,180,1000,400],[1,-DPfreq+1000,180,100,1]])
+        ubounds = np.array([[1,RBCexpectedHz+358,180,1000,1],[1,MEMexpectedHz+358,180,1000,400],[1,-DPfreq+1000,180,200,1]])
         debounds = [(lbounds.flatten()[k],ubounds.flatten()[k]) for k in range(len(lbounds.flatten()))]
         for fit_iteration in range(5):
             diffev = differential_evolution(residual_de, bounds=debounds, args=(t, S), maxiter=30000, tol=1e-9, popsize = 3, mutation = (0.5,1.0), recombination=0.7)
@@ -522,10 +530,13 @@ class FlipCal:
         for _ in range(5):
             result = differential_evolution(residual_de, bounds, args=(t, S), popsize=3, tol=1e-9)
             A = np.reshape(result.x, (3, 5))
+            # local_result = minimize(lambda A: np.sum((FIDfunc_cf(t, *A) - S)**2), result.x, method='L-BFGS-B', bounds=bounds) 
+            # A = np.reshape(local_result.x, (3, 5)) 
             if (RBCexpectedHz - 357 < A[0, 1] < RBCexpectedHz + 357) and \
             (MEMexpectedHz - 357 < A[1, 1] < MEMexpectedHz + 357):
                 return A
         return A  # fallback
+
 
     def fit_all_DP_FIDs(self,**kwargs):
         '''Fits every DP RO to the 3-resonance-decay model - This is where our RBC oscillations come from.
@@ -609,6 +620,7 @@ class FlipCal:
 
 
     def adjust_DP_params(self):
+        '''If the DP fit isn't perfect, this will allow the user to adjust parameters for a better fit'''
         import PySimpleGUI as sg
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         import matplotlib.pyplot as plt
@@ -632,19 +644,24 @@ class FlipCal:
             figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
             return figure_canvas_agg
 
-        fig, ax = plt.subplots(figsize=(6, 2.5))
+        fig, ax = plt.subplots(figsize=(12, 5))
         fig_agg = None
 
         def updatePlot(temp_DP_fit_params):
             nonlocal fig_agg
             ax.clear()
-            ax.plot(self.t, self.DPfid, label='Original DP FID')
+            ax.plot(self.t, self.DPfid.real, label='Original DP FID',color='green')
+            ax.plot(self.t, self.DPfid.imag, label='Original DP FID',color='purple')
 
             t = np.arange(0, 512) * self.scanParameters['dwellTime']
             S = (self.FIDFitfunction(t, *temp_DP_fit_params[0,:]) +
                 self.FIDFitfunction(t, *temp_DP_fit_params[1,:]) +
                 self.FIDFitfunction(t, *temp_DP_fit_params[2,:]))
-            ax.plot(t, S, label='Fitted Signal')
+            ax.plot(t, S.real, label='Fitted Signal',color='green',linestyle='--')
+            ax.plot(t, S.imag, label='Fitted Signal',color='purple',linestyle='--')
+            residual = S[2:] - self.DPfid
+            cost = np.linalg.norm(residual)
+            ax.plot(self.t, S[2:] - self.DPfid, label=f'Res: {cost*1e6}')
             ax.legend()
             fig.tight_layout()
 
@@ -657,7 +674,7 @@ class FlipCal:
         window = sg.Window('adjust_DP_params()', windowLayout,
                         return_keyboard_events=True,
                         margins=(0, 0), finalize=True,
-                        size=(1000, 550), resizable=True)
+                        size=(1000, 750), resizable=True)
 
         updatePlot(temp_DP_fit_params)
 
@@ -668,27 +685,35 @@ class FlipCal:
             elif event == 'mem_a_up':
                     temp_DP_fit_params[1,0] = temp_DP_fit_params[1,0] + 1e-6
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_a'].update(temp_DP_fit_params[1,0])
             elif event == 'mem_a_down':
                     temp_DP_fit_params[1,0] = temp_DP_fit_params[1,0] - 1e-6
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_a'].update(temp_DP_fit_params[1,0])
             elif event == 'mem_w_up':
-                    temp_DP_fit_params[1,1] = temp_DP_fit_params[1,1] + 10
+                    temp_DP_fit_params[1,1] = temp_DP_fit_params[1,1] + 1
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_w'].update(temp_DP_fit_params[1,1])
             elif event == 'mem_w_down':
-                    temp_DP_fit_params[1,1] = temp_DP_fit_params[1,1] - 10
+                    temp_DP_fit_params[1,1] = temp_DP_fit_params[1,1] - 1
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_w'].update(temp_DP_fit_params[1,1])
             elif event == 'mem_L_up':
                     temp_DP_fit_params[1,3] = temp_DP_fit_params[1,3] + 10
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_L'].update(temp_DP_fit_params[1,3])
             elif event == 'mem_L_down':
                     temp_DP_fit_params[1,3] = temp_DP_fit_params[1,3] - 10
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_L'].update(temp_DP_fit_params[1,3])
             elif event == 'mem_G_up':
                     temp_DP_fit_params[1,4] = temp_DP_fit_params[1,4] + 10
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_G'].update(temp_DP_fit_params[1,4])
             elif event == 'mem_G_down':
                     temp_DP_fit_params[1,4] = temp_DP_fit_params[1,4] - 10
                     updatePlot(temp_DP_fit_params)  #GPT
+                    window['mem_G'].update(temp_DP_fit_params[1,4])
             elif event == 'update':
                 try:  #GPT
                     temp_DP_fit_params[1,0] = float(values['mem_a'])  #GPT
