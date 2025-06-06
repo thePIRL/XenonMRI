@@ -167,7 +167,7 @@ class FlipCal:
         if self.FID == '':
             print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
             self.FID = np.zeros((512,520))
-            self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':34081625, 'dissolvedFrequencyOffset':7090, 'pulseDuration': 670,'n_RO_pts_to_skip':0}
+            self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':34081625, 'dissolvedFrequencyOffset':7090, 'PulseDuration': 670,'n_RO_pts_to_skip':0}
             self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
         else:
             print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
@@ -176,6 +176,7 @@ class FlipCal:
         '''This does the entire Calibration processing pipeline'''
         # 1) perform SVD to create FID objects: noise, DP, GAS, DPfid, DPdecay, RBCosc, GASfid, gasDecay
         self.SVD()
+        # 1) perform SVD to create FID objects: noise, DP, GAS, DPfid, DPdecay, RBCosc, GASfid, gasDecay
         self.RMSnoise = np.std(np.concatenate((self.noise.real,self.noise.imag)))
         self.gas_fit_params, self.newGasFrequency = self.fit_GAS_FID()
         self.getFlipAngle()
@@ -609,7 +610,7 @@ class FlipCal:
         self.scanParameters['systemVendor'] = self.twix.hdr.Dicom.Manufacturer
         self.scanParameters['scannerSoftwareVersion'] = self.twix.hdr.Dicom.SoftwareVersions
         self.scanParameters['institutionName'] = self.twix.hdr.Dicom.InstitutionName
-        self.scanParameters['B0fieldStrength'] = self.twix.hdr.Meas['flNominalB0']
+        #self.scanParameters['B0fieldStrength'] = self.twix.hdr.Meas['flNominalB0']
         self.scanParameters['FlipAngle'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[0])
         self.scanParameters['FlipAngle_DP'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[1])
         self.scanParameters['XenonLarmorFrequency'] = float(self.twix.hdr.Meas["alLarmorConstant"].split(" ")[0])
