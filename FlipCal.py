@@ -167,7 +167,7 @@ class FlipCal:
         if self.FID == '':
             print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
             self.FID = np.zeros((512,520))
-            self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':43081625, 'dissolvedFrequencyOffset':7090, 'pulseDuration': 670,'n_RO_pts_to_skip':0}
+            self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':34081625, 'dissolvedFrequencyOffset':7090, 'pulseDuration': 670,'n_RO_pts_to_skip':0}
             self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
         else:
             print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
@@ -291,10 +291,8 @@ class FlipCal:
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
             FID = self.DPfid
-            print('No FID given, using attribute DPfid')
-        if t is None: # -- If no FID is input, it uses the SVD DPfid
+        if t is None: # -- If no time vector is input, it uses the attribute t
             t = self.t
-            print('No t given, using attribute t')
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
