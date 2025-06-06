@@ -90,7 +90,7 @@ class FlipCal:
                          'institutionName': '',
                          'B0fieldStrength': '',
                          'FlipAngle': '',
-                         'DisFrequencyOffset': '',
+                         'dissolvedFrequencyOffset': '',
                          'referenceAmplitude': '',
                          'TE': '',
                          'TR': '',
@@ -206,143 +206,7 @@ class FlipCal:
             print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD\033[37m")
         self.processDate = datetime.date.today().strftime("%y%m%d")
-    
-    def parseTwix(self):
-        '''Fetches some of our favorite parameters from the twix object header.
-        Most of these are stored in the scanParameters dictionary'''
-        # -- INPUT ATTRIBUTES -- ##
-        self.twix.image.squeeze = True # --- remove singleton dimensions of data array
-        self.twix.image.removeOS = False # - Keep all 512 datapoints (don't reduce to 256)
-        self.FID = self.twix.image[''] # --- the FID data array (index 0 = noise, 1:499 = DP, 500:519 = GAS)
-        self.FID = self.FID.astype(np.complex128)  # Uses more memory but better for SVD and fitting
-        self.calibration_dict = self.extract_attributes(self.twix.hdr) ## -- converts twix header to dictionary
-        self.patientInfo['PatientName'] = self.twix.hdr.Config['PatientName']
-        self.patientInfo['PatientDOB'] = self.twix.hdr.Config['PatientBirthDay']
-        self.patientInfo['PatientSex'] = self.twix.hdr.Config['PatientSex']
-        self.patientInfo['PatientWeight'] = self.twix.hdr.Dicom['flUsedPatientWeight']
-        self.patientInfo['PatientAge'] = self.twix.hdr.Dicom['flPatientAge']
-        self.scanParameters['scanDateTime'] = self.twix.hdr.Config['PrepareTimestamp']
-        self.scanParameters['scanDate'], self.scanParameters['scanTime'] = self.twix.hdr.Config['PrepareTimestamp'].split()
-        self.scanParameters['systemVendor'] = self.twix.hdr.Dicom.Manufacturer
-        self.scanParameters['scannerSoftwareVersion'] = self.twix.hdr.Dicom.SoftwareVersions
-        self.scanParameters['institutionName'] = self.twix.hdr.Dicom.InstitutionName
-        self.scanParameters['B0fieldStrength'] = self.twix.hdr.Meas['flNominalB0']
-        self.scanParameters['FlipAngle'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[0])
-        self.scanParameters['FlipAngle_DP'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[1])
-        self.scanParameters['XenonLarmorFrequency'] = float(self.twix.hdr.Meas["alLarmorConstant"].split(" ")[0])
-        self.scanParameters['ProtocolName'] = self.twix.hdr.Config['SequenceDescription']# Also in Meas
-        self.scanParameters['referenceAmplitude'] = self.twix.hdr.Dicom['flTransRefAmpl'] #Also in Meas and Protocol
-        self.scanParameters['FOV'] = float(self.twix.hdr.Config.ReadFoV) #Field of View (I guess needed for ISMRMRD on calibrations??)
-        self.scanParameters['TE'] = self.twix.hdr.Meas['alTE'].split(' ')[0] #Also in Protocol
-        self.scanParameters['TR'] = self.twix.hdr.Config['TR'].split(' ')[0]
-        self.scanParameters['GasFrequency'] = self.twix.hdr.Dicom['lFrequency'] # -- Gas Frequency in Hz
-        self.scanParameters['DisFrequencyOffset'] = self.twix.hdr.Phoenix["sWipMemBlock", "alFree", "4"]
-        self.scanParameters['nFIDs'] = self.twix.hdr.Config['NRepMeas']
-        self.scanParameters['nPts'] = self.twix.hdr.Config['VectorSize'] # This assumes oversampling
-        self.scanParameters['scanDate'] = self.twix.hdr.MeasYaps[("tReferenceImage0",)].strip('"').split(".")[-1][:8] # - scanDate
-        self.scanParameters['scanTime'] = self.twix.hdr.Config['PrepareTimestamp'][-8:] # -- scan time
-        self.scanParameters['referenceVoltage'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '0')] # -- reference voltage
-        self.scanParameters['dwellTime'] = self.twix.hdr.Config['DwellTime']*1e-9 # in seconds
-        self.scanParameters['FieldStrength'] = self.twix.hdr.Dicom['flMagneticFieldStrength'] # - B0 strength
-        self.scanParameters['PulseDuration'] = float(self.twix.hdr.Meas['alTD'].split(' ')[0]) # - Pulse Duration in us
-        self.scanParameters['n_noise_FIDs'] = int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '1')]) # No of noise FIDs
-        self.scanParameters['n_DP_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '2')]) # No of DP FIDs
-        self.scanParameters['n_GAS_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '3')]) # No of GAS FIDs
-        self.scanParameters['dissolvedFrequencyOffset'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '4')]
-        self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
-    
-    def parseMatlab(self):
-        '''Note that the newest version of the matlab Processing code (8/2024 and later) contains
-        the twix object from mapVBVD, so maybe just use that to populat the header??'''
-        self.FID = self.matlab['theFID']
-        self.patientInfo['PatientName'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['PatientName'][0][0][0]
-        self.scanParameters['ProtocolName'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['SequenceDescription'][0][0][0]
-        self.scanParameters['PatientWeight'] = self.matlab['twix_obj']['hdr'][0][0]['Dicom'][0][0]['flUsedPatientWeight'][0][0][0][0]
-        self.scanParameters['referenceAmplitude'] = self.matlab['twix_obj']['hdr'][0][0]['Dicom'][0][0]['flTransRefAmpl'][0][0][0][0]
-        self.scanParameters['TE'] = self.matlab['te'][0][0]
-        self.scanParameters['TR'] = self.matlab['tr'][0][0]
-        self.scanParameters['GasFrequency'] = self.matlab['freq'][0][0]
-        self.scanParameters['nFIDs'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['NRepMeas'][0][0][0][0]
-        self.scanParameters['nPts'] = self.matlab['nPts'][0][0]
-        #self.scanParameters['scanDateTime'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['PrepareTimeStamp'][0][0][0][0]
-        self.scanParameters['referenceVoltage'] = self.matlab['VRef'][0][0]
-        self.scanParameters['dwellTime'] = self.matlab['dwell_time'][0][0]
-        self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
-        self.RO_fit_params = self.matlab['ROfitParams']
-        self.RO_fit_params[:,0,:] = self.matlab['ROfitParams'][:,1,:]
-        self.RO_fit_params[:,1,:] = self.matlab['ROfitParams'][:,0,:]
-        self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
-        self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['n_FIDs_to_steady_state']:])
-        self.flipAngleFitParams = self.matlab['fitparams'][0]
-        self.flip_angle = self.flipAngleFitParams[1]*180/np.pi
-        self.flip_err = 0
-        self.scanParameters['newVoltage'] = self.matlab['VRefScaleFactor']*self.matlab['VRef']
-        self.GASfid = self.FID[:,500]
-        self.DPfid = self.matlab['disData_avg']
-        [self.Ugas,self.Sgas,self.VTgas] = np.linalg.svd(self.FID[:,500:])
-        self.gasDecay = np.abs(self.VTgas[0,:]*self.Sgas[0])
-        def hilbert(S):
-            F = np.fft.fftshift(np.fft.fft(S))
-            F[:int(len(S)/2 + 1)] = 0
-            H = np.fft.ifft(np.fft.fftshift(F))
-            return H
-        hilb = hilbert(self.RBC2MEM[self.scanParameters['n_FIDs_to_steady_state']:])
-        self.RBC2MEMamp = np.mean(np.abs(hilb))
-        try:
-            self.DP_fit_params = self.matlab['disFit']
-            self.gas_fit_params = self.matlab['gasFit'][0]
-            self.newGasFrequency = self.scanParameters['GasFrequency'] + self.gas_fit_params[1]
-        except:
-            print('Older version of matlab file was parsed. need to run process to get DP and GAS fit params...')
-    
-    def parseISMRMRD(self,ismrmrd_path):
-        """Function to read an ISMRMRD .h5 file and reconstruct the header_dict and FID data."""
-        ismrmrd_object = ismrmrd.Dataset(ismrmrd_path,'/dataset',create_if_needed=False) # gets IRMRMRD object
-        print('Pulling ISMRMRD Header...')
-        header_str = ismrmrd_object.read_xml_header().decode('utf-8') #convert ismrmrd object header to xml then to bytestring
-        root = ET.fromstring(header_str)
-        def parse_ismrmrd_header(root):
-            def xml_to_dict(elem):
-                if len(elem) == 0:  # No children
-                    return elem.text
-                else:
-                    return {child.tag.split('}')[-1]: xml_to_dict(child) for child in elem}  # Remove namespace if present
-            header_dict = {root.tag.split('}')[-1]: xml_to_dict(root)}  # Remove namespace from root tag
-            return header_dict
-        self.calibration_dict = parse_ismrmrd_header(root) # from xml bytestring make dictionary
-        # (editor's note: this is stupidly complicated and requires packages outside ismrmrd)
-        self.scanParameters['scanDate'] = self.calibration_dict['ismrmrdHeader']['studyInformation']['studyDate']
-        self.patientInfo['PatientName'] = self.calibration_dict['ismrmrdHeader']['subjectInformation']['patientID']
-        self.scanParameters['systemVendor'] = self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['systemVendor']
-        self.scanParameters['institutionName'] = self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['institutionName']
-        self.scanParameters['B0fieldStrength'] = float(self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['systemFieldStrength_T'])
-        self.scanParameters['TE'] = int(self.calibration_dict['ismrmrdHeader']['sequenceParameters']['TE'])
-        self.scanParameters['TR'] = int(self.calibration_dict['ismrmrdHeader']['sequenceParameters']['TR'])
-        self.scanParameters['FlipAngle'] = float(self.calibration_dict['ismrmrdHeader']['sequenceParameters']['flipAngle_deg'])
-        self.scanParameters['FOV'] = self.calibration_dict['ismrmrdHeader']['encoding']['reconSpace']['fieldOfView_mm']['x']
-        ## -- Pulling userParameters here
-        ns = {'ns': 'http://www.ismrm.org/ISMRMRD'}
-        for user_param in root.findall(".//ns:userParameters/ns:userParameterLong", namespaces=ns):
-            param_name = user_param.find("ns:name", namespaces=ns).text
-            param_value = user_param.find("ns:value", namespaces=ns).text
-            if param_name == 'xe_center_frequency':
-                self.scanParameters['GasFrequency'] = float(param_value)
-            elif param_name == 'xe_dissolved_offset_frequency':
-                self.scanParameters['DisFrequencyOffset'] = float(param_value)
-            else:
-                self.scanParameters[param_name] = param_value
-                print('During ISMRMRD Parse I found {param_name} with value {param_value}')
-        print(f'Pulling {ismrmrd_object.number_of_acquisitions()} acquisitions from ISMRMRD data...')
-        acquisitions = []
-        for i in range(ismrmrd_object.number_of_acquisitions()):
-            acq = ismrmrd_object.read_acquisition(i)
-            acquisitions.append(np.squeeze(acq.data))
-        self.FID = np.stack(acquisitions, axis=-1)
-        acquisition_header = ismrmrd_object.read_acquisition(0).getHead()
-        self.scanParameters['dwellTime'] = acquisition_header.sample_time_us*1e-6
-        self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
-        ismrmrd_object.close()
-    
+
     def SVD(self):
         """Performs Singular Value Decomposition for analysis"""
         def flipCheck(a,b): # -- SVD can randomize the sign of data, lets check and fix if needed
@@ -725,8 +589,148 @@ class FlipCal:
         window.close()  #GPT
         return temp_DP_fit_params
 
+    # ---------------------------------------------------------------------- #
+    # ---------Methods to Parse Various Input Datas Formats ---------------- #
+    # ---------------------------------------------------------------------- #
+    def parseTwix(self):
+        '''Fetches some of our favorite parameters from the twix object header.
+        Most of these are stored in the scanParameters dictionary'''
+        # -- INPUT ATTRIBUTES -- ##
+        self.twix.image.squeeze = True # --- remove singleton dimensions of data array
+        self.twix.image.removeOS = False # - Keep all 512 datapoints (don't reduce to 256)
+        self.FID = self.twix.image[''] # --- the FID data array (index 0 = noise, 1:499 = DP, 500:519 = GAS)
+        self.FID = self.FID.astype(np.complex128)  # Uses more memory but better for SVD and fitting
+        self.calibration_dict = self.extract_attributes(self.twix.hdr) ## -- converts twix header to dictionary
+        self.patientInfo['PatientName'] = self.twix.hdr.Config['PatientName']
+        self.patientInfo['PatientDOB'] = self.twix.hdr.Config['PatientBirthDay']
+        self.patientInfo['PatientSex'] = self.twix.hdr.Config['PatientSex']
+        self.patientInfo['PatientWeight'] = self.twix.hdr.Dicom['flUsedPatientWeight']
+        self.patientInfo['PatientAge'] = self.twix.hdr.Dicom['flPatientAge']
+        self.scanParameters['scanDateTime'] = self.twix.hdr.Config['PrepareTimestamp']
+        self.scanParameters['scanDate'], self.scanParameters['scanTime'] = self.twix.hdr.Config['PrepareTimestamp'].split()
+        self.scanParameters['systemVendor'] = self.twix.hdr.Dicom.Manufacturer
+        self.scanParameters['scannerSoftwareVersion'] = self.twix.hdr.Dicom.SoftwareVersions
+        self.scanParameters['institutionName'] = self.twix.hdr.Dicom.InstitutionName
+        self.scanParameters['B0fieldStrength'] = self.twix.hdr.Meas['flNominalB0']
+        self.scanParameters['FlipAngle'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[0])
+        self.scanParameters['FlipAngle_DP'] = float(self.twix.hdr.Meas["adFlipAngleDegree"].split(" ")[1])
+        self.scanParameters['XenonLarmorFrequency'] = float(self.twix.hdr.Meas["alLarmorConstant"].split(" ")[0])
+        self.scanParameters['ProtocolName'] = self.twix.hdr.Config['SequenceDescription']# Also in Meas
+        self.scanParameters['referenceAmplitude'] = self.twix.hdr.Dicom['flTransRefAmpl'] #Also in Meas and Protocol
+        self.scanParameters['FOV'] = float(self.twix.hdr.Config.ReadFoV) #Field of View (I guess needed for ISMRMRD on calibrations??)
+        self.scanParameters['TE'] = self.twix.hdr.Meas['alTE'].split(' ')[0] #Also in Protocol
+        self.scanParameters['TR'] = self.twix.hdr.Config['TR'].split(' ')[0]
+        self.scanParameters['GasFrequency'] = self.twix.hdr.Dicom['lFrequency'] # -- Gas Frequency in Hz
+        self.scanParameters['nFIDs'] = self.twix.hdr.Config['NRepMeas']
+        self.scanParameters['nPts'] = self.twix.hdr.Config['VectorSize'] # This assumes oversampling
+        self.scanParameters['scanDate'] = self.twix.hdr.MeasYaps[("tReferenceImage0",)].strip('"').split(".")[-1][:8] # - scanDate
+        self.scanParameters['scanTime'] = self.twix.hdr.Config['PrepareTimestamp'][-8:] # -- scan time
+        self.scanParameters['referenceVoltage'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '0')] # -- reference voltage
+        self.scanParameters['dwellTime'] = self.twix.hdr.Config['DwellTime']*1e-9 # in seconds
+        self.scanParameters['FieldStrength'] = self.twix.hdr.Dicom['flMagneticFieldStrength'] # - B0 strength
+        self.scanParameters['PulseDuration'] = float(self.twix.hdr.Meas['alTD'].split(' ')[0]) # - Pulse Duration in us
+        self.scanParameters['n_noise_FIDs'] = int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '1')]) # No of noise FIDs
+        self.scanParameters['n_DP_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '2')]) # No of DP FIDs
+        self.scanParameters['n_GAS_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '3')]) # No of GAS FIDs
+        #self.scanParameters['DisFrequencyOffset'] = self.twix.hdr.Phoenix["sWipMemBlock", "alFree", "4"]
+        self.scanParameters['dissolvedFrequencyOffset'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '4')] # How many Hz away from Gas are we exciting DP?
+        self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
     
-    ## ------ Plot Draw Functions ------ ##
+    def parseMatlab(self):
+        '''Note that the newest version of the matlab Processing code (8/2024 and later) contains
+        the twix object from mapVBVD, so maybe just use that to populat the header??'''
+        self.FID = self.matlab['theFID']
+        self.patientInfo['PatientName'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['PatientName'][0][0][0]
+        self.scanParameters['ProtocolName'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['SequenceDescription'][0][0][0]
+        self.scanParameters['PatientWeight'] = self.matlab['twix_obj']['hdr'][0][0]['Dicom'][0][0]['flUsedPatientWeight'][0][0][0][0]
+        self.scanParameters['referenceAmplitude'] = self.matlab['twix_obj']['hdr'][0][0]['Dicom'][0][0]['flTransRefAmpl'][0][0][0][0]
+        self.scanParameters['TE'] = self.matlab['te'][0][0]
+        self.scanParameters['TR'] = self.matlab['tr'][0][0]
+        self.scanParameters['GasFrequency'] = self.matlab['freq'][0][0]
+        self.scanParameters['nFIDs'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['NRepMeas'][0][0][0][0]
+        self.scanParameters['nPts'] = self.matlab['nPts'][0][0]
+        #self.scanParameters['scanDateTime'] = self.matlab['twix_obj']['hdr'][0][0]['Config'][0][0]['PrepareTimeStamp'][0][0][0][0]
+        self.scanParameters['referenceVoltage'] = self.matlab['VRef'][0][0]
+        self.scanParameters['dwellTime'] = self.matlab['dwell_time'][0][0]
+        self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
+        self.RO_fit_params = self.matlab['ROfitParams']
+        self.RO_fit_params[:,0,:] = self.matlab['ROfitParams'][:,1,:]
+        self.RO_fit_params[:,1,:] = self.matlab['ROfitParams'][:,0,:]
+        self.RBC2MEM = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
+        self.RBC2MEMavg = np.mean(self.RBC2MEM[self.scanParameters['n_FIDs_to_steady_state']:])
+        self.flipAngleFitParams = self.matlab['fitparams'][0]
+        self.flip_angle = self.flipAngleFitParams[1]*180/np.pi
+        self.flip_err = 0
+        self.scanParameters['newVoltage'] = self.matlab['VRefScaleFactor']*self.matlab['VRef']
+        self.GASfid = self.FID[:,500]
+        self.DPfid = self.matlab['disData_avg']
+        [self.Ugas,self.Sgas,self.VTgas] = np.linalg.svd(self.FID[:,500:])
+        self.gasDecay = np.abs(self.VTgas[0,:]*self.Sgas[0])
+        def hilbert(S):
+            F = np.fft.fftshift(np.fft.fft(S))
+            F[:int(len(S)/2 + 1)] = 0
+            H = np.fft.ifft(np.fft.fftshift(F))
+            return H
+        hilb = hilbert(self.RBC2MEM[self.scanParameters['n_FIDs_to_steady_state']:])
+        self.RBC2MEMamp = np.mean(np.abs(hilb))
+        try:
+            self.DP_fit_params = self.matlab['disFit']
+            self.gas_fit_params = self.matlab['gasFit'][0]
+            self.newGasFrequency = self.scanParameters['GasFrequency'] + self.gas_fit_params[1]
+        except:
+            print('Older version of matlab file was parsed. need to run process to get DP and GAS fit params...')
+    
+    def parseISMRMRD(self,ismrmrd_path):
+        """Function to read an ISMRMRD .h5 file and reconstruct the header_dict and FID data."""
+        ismrmrd_object = ismrmrd.Dataset(ismrmrd_path,'/dataset',create_if_needed=False) # gets IRMRMRD object
+        print('Pulling ISMRMRD Header...')
+        header_str = ismrmrd_object.read_xml_header().decode('utf-8') #convert ismrmrd object header to xml then to bytestring
+        root = ET.fromstring(header_str)
+        def parse_ismrmrd_header(root):
+            def xml_to_dict(elem):
+                if len(elem) == 0:  # No children
+                    return elem.text
+                else:
+                    return {child.tag.split('}')[-1]: xml_to_dict(child) for child in elem}  # Remove namespace if present
+            header_dict = {root.tag.split('}')[-1]: xml_to_dict(root)}  # Remove namespace from root tag
+            return header_dict
+        self.calibration_dict = parse_ismrmrd_header(root) # from xml bytestring make dictionary
+        # (editor's note: this is stupidly complicated and requires packages outside ismrmrd)
+        self.scanParameters['scanDate'] = self.calibration_dict['ismrmrdHeader']['studyInformation']['studyDate']
+        self.patientInfo['PatientName'] = self.calibration_dict['ismrmrdHeader']['subjectInformation']['patientID']
+        self.scanParameters['systemVendor'] = self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['systemVendor']
+        self.scanParameters['institutionName'] = self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['institutionName']
+        self.scanParameters['B0fieldStrength'] = float(self.calibration_dict['ismrmrdHeader']['acquisitionSystemInformation']['systemFieldStrength_T'])
+        self.scanParameters['TE'] = int(self.calibration_dict['ismrmrdHeader']['sequenceParameters']['TE'])
+        self.scanParameters['TR'] = int(self.calibration_dict['ismrmrdHeader']['sequenceParameters']['TR'])
+        self.scanParameters['FlipAngle'] = float(self.calibration_dict['ismrmrdHeader']['sequenceParameters']['flipAngle_deg'])
+        self.scanParameters['FOV'] = self.calibration_dict['ismrmrdHeader']['encoding']['reconSpace']['fieldOfView_mm']['x']
+        ## -- Pulling userParameters here
+        ns = {'ns': 'http://www.ismrm.org/ISMRMRD'}
+        for user_param in root.findall(".//ns:userParameters/ns:userParameterLong", namespaces=ns):
+            param_name = user_param.find("ns:name", namespaces=ns).text
+            param_value = user_param.find("ns:value", namespaces=ns).text
+            if param_name == 'xe_center_frequency':
+                self.scanParameters['GasFrequency'] = float(param_value)
+            elif param_name == 'xe_dissolved_offset_frequency':
+                self.scanParameters['dissolvedFrequencyOffset'] = float(param_value)
+            else:
+                self.scanParameters[param_name] = param_value
+                print('During ISMRMRD Parse I found {param_name} with value {param_value}')
+        print(f'Pulling {ismrmrd_object.number_of_acquisitions()} acquisitions from ISMRMRD data...')
+        acquisitions = []
+        for i in range(ismrmrd_object.number_of_acquisitions()):
+            acq = ismrmrd_object.read_acquisition(i)
+            acquisitions.append(np.squeeze(acq.data))
+        self.FID = np.stack(acquisitions, axis=-1)
+        acquisition_header = ismrmrd_object.read_acquisition(0).getHead()
+        self.scanParameters['dwellTime'] = acquisition_header.sample_time_us*1e-6
+        self.t = np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']
+        ismrmrd_object.close()
+    
+    # ---------------------------------------------------------------------- #
+    # ---------- Plot methods for DICOM export and printout ---------------- #
+    # ---------------------------------------------------------------------- #
     def draw_GAS_phasor(self,ax4):
         gasPhasor_nTE = self.FIDFitfunction(-435e-6,*self.gas_fit_params)
         gasPhasor_0 = self.FIDFitfunction(-435e-6,*self.gas_fit_params)
@@ -1170,7 +1174,7 @@ class FlipCal:
             # if not hasattr(ismrmrd_header.userParameters, 'userParameterLong'):
             #     ismrmrd_header.userParameters.userParameterLong = []
             ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_center_frequency",self.scanParameters['GasFrequency']))
-            ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_dissolved_offset_frequency",self.scanParameters['DisFrequencyOffset']))
+            ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_dissolved_offset_frequency",self.scanParameters['dissolvedFrequencyOffset']))
             if not hasattr(ismrmrd_header.encoding, "trajectoryDescription"):
                 ismrmrd_header.encoding = ismrmrd.xsd.encodingType()
             if type(ismrmrd_header.encoding.reconSpace) == type(None):
