@@ -13,9 +13,9 @@ import ismrmrd # ---------------------------------- For importing/exporting ISMR
 import json # ------------------------------------- For exporting Twix Header
 import xml.etree.ElementTree as ET # -------------- To parse ISMRMRD header - parseISMRMRD()
 import pydicom # ---------------------------------- For saving plots as dicoms - 
-from pydicom.dataset import Dataset
-from joblib import Parallel, delayed
-from contextlib import contextmanager
+from pydicom.dataset import Dataset # ------------- For DICOM creation - exportDICOM()
+from joblib import Parallel, delayed # ------------ for parallel processing of all FIDs - fit_all_DP_FIDs()
+from contextlib import contextmanager # ----------- Handler for tqdm
 
 class FlipCal:
     '''This class inputs raw FlipCal data (either as twix, matlab, or previously saved pickle),
@@ -108,42 +108,42 @@ class FlipCal:
         
         # -- Created Attributes in SVD() -- ##
         self.singular_values_to_keep = 2
-        self.noise = '' # --------- Single noise FID (column 0 of FID) 
-        self.DP = '' # ------------ Dissolved phase FIDs (columns 1:499) 
-        self.GAS = '' # ----------- Gas FIDs (columns 500:519) 
-        self.DPfid = '' # --------- First U column in DP SVD (best representation of a single DP fid)
-        self.DPdecay = '' # ------- First V column in DP SVD (captures decay due to depolarization)
-        self.RBCosc = '' # -------- Second V column in Dp SVD (mostly captures wiggles)
-        self.GASfid = '' # -------- First U column in GAS SVD (best representation of single GAS fid)
-        self.gasDecay = '' # ------ First V column in GAS SVD (captures decay due to depolarization)
+        self.noise = '' # --------------- Single noise FID (column 0 of FID) 
+        self.DP = '' # ------------------ Dissolved phase FIDs (columns 1:499) 
+        self.GAS = '' # ----------------- Gas FIDs (columns 500:519) 
+        self.DPfid = '' # --------------- First U column in DP SVD (best representation of a single DP fid)
+        self.DPdecay = '' # ------------- First V column in DP SVD (captures decay due to depolarization)
+        self.RBCosc = '' # -------------- Second V column in Dp SVD (mostly captures wiggles)
+        self.GASfid = '' # -------------- First U column in GAS SVD (best representation of single GAS fid)
+        self.gasDecay = '' # ------------ First V column in GAS SVD (captures decay due to depolarization)
         # -- Attributes Created in fit_GAS_FID()
-        self.gas_fit_params = '' # ---- A (1,5) of gas FID fit parameters [area, freq, phase, fwhmL, fwhmG]
-        self.newGasFrequency = '' # --- Actual 129Xe Gas NMR frequency
+        self.gas_fit_params = '' # ------ A (1,5) of gas FID fit parameters [area, freq, phase, fwhmL, fwhmG]
+        self.newGasFrequency = '' # ----- Actual 129Xe Gas NMR frequency
         # -- Attributes Created in getFlipAngle()
         self.flipAngleFitParams = '' # -- parameters of gas Decay fit
         self.flip_angle = '' # ---------- Actual Delivered Flip Angle
         self.flip_err = '' # ------------ Error in calculated flip angle
         self.newVoltage = '' # ---------- Voltage that /would/ yield a 20° flip (to be given to DP)
         # -- Attributes Created in fit_DP_FID()
-        self.DP_fit_params = '' #-- A (3,5) of DP FID fit parameters [row 0: RBC, row 1: MEM, row 2: GAS]
+        self.DP_fit_params = '' # ------- A (3,5) of DP FID fit parameters [row 0: RBC, row 1: MEM, row 2: GAS]
         # -- Attributes Created in fit_all_DP_FIDs()
-        self.RO_fit_params = '' #---------- (3x5xN) array of DP fits (N=499 for our data typically)
-        self.RBC2MEMsig = '' # ------------ vector of RBC/membrane signal ratios
-        self.Mrbc = '' # ------------------ vector of RBC magnetizations (signal corrected for off-res excitation)
-        self.Mmem = '' # ------------------ vector of MEM magnetizations (signal corrected for off-res excitation)
-        self.RBC2MEMmag = '' # ------------ vector of RBC/membrane magnetization ratios (signal ratios corrected for off-resonance excitation)
+        self.RO_fit_params = '' #-------- (3x5xN) array of DP fits (N=499 for our data typically)
+        self.RBC2MEMsig = '' # ---------- vector of RBC/membrane signal ratios
+        self.Mrbc = '' # ---------------- vector of RBC magnetizations (signal corrected for off-res excitation)
+        self.Mmem = '' # ---------------- vector of MEM magnetizations (signal corrected for off-res excitation)
+        self.RBC2MEMmag = '' # ---------- vector of RBC/membrane magnetization ratios (signal ratios corrected for off-resonance excitation)
         # -- Attributes Created in process()
-        self.TE90 = '' # ---------- Time to 90° difference b/t RBC and MEM
-        self.RBC2MEMsig = '' #  RBC2membrane signal ratio (fit of DP svd spectrum)
-        self.RBC2MEMmag = '' #  RBC2membrane magnetization ration (signal ratio corrected by excitation angles)
-        self.RBC2MEMdix = '' #  RBC2membrane ratio which the Dixon acquisition should use (assuming RBC resonance excitation)
-        self.RBC2MEMsig_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
-        self.RBC2MEMmag_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
-        self.RBC2MEMdix_wiggles = '' #  Same as above but averaged from the dynamic RBC/mem calculation
-        self.RBCppm = '' # -------- Chem shift of RBC peak
-        self.MEMppm = '' # -------- Chem shift of MEM peak
-        self.RBC2MEMmag_amp = '' # -The magnetization wiggle amplitude 
-        ## -- Was a pickle or a pickle path provided? -- ##
+        self.TE90 = '' # ---------------- Time to 90° difference b/t RBC and MEM
+        self.RBC2MEMsig = '' # ---------- RBC2membrane signal ratio (fit of DP svd spectrum)
+        self.RBC2MEMmag = '' # ---------- RBC2membrane magnetization ration (signal ratio corrected by excitation angles)
+        self.RBC2MEMdix = '' # ---------- RBC2membrane ratio which the Dixon acquisition should use (assuming RBC resonance excitation)
+        self.RBC2MEMsig_wiggles = '' # -- Same as above but averaged from the dynamic RBC/mem calculation
+        self.RBC2MEMmag_wiggles = '' # -- Same as above but averaged from the dynamic RBC/mem calculation
+        self.RBC2MEMdix_wiggles = '' # -- Same as above but averaged from the dynamic RBC/mem calculation
+        self.RBCppm = '' # -------------- Chem shift of RBC peak
+        self.MEMppm = '' # -------------- Chem shift of MEM peak
+        self.RBC2MEMmag_amp = '' # ------ The magnetization wiggle amplitude 
+        ## -- Open the data and populate attributes -- ##
         if pickle_path is not None:
             with open(pickle_path, 'rb') as file:
                 pickle_dict = pickle.load(file)
@@ -164,6 +164,7 @@ class FlipCal:
             self.parseMatlab()
         if ismrmrd_path is not None:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
+        ## -- If after all that, we still have an empty FID, initialize the object, but remind the user to populate attributes manually
         if self.FID == '':
             print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
             self.FID = np.zeros((512,520))
@@ -176,20 +177,27 @@ class FlipCal:
         '''This does the entire Calibration processing pipeline'''
         # 1) perform SVD to create FID objects: noise, DP, GAS, DPfid, DPdecay, RBCosc, GASfid, gasDecay
         self.SVD()
-        # 1) perform SVD to create FID objects: noise, DP, GAS, DPfid, DPdecay, RBCosc, GASfid, gasDecay
         self.RMSnoise = np.std(np.concatenate((self.noise.real,self.noise.imag)))
+        # 2) Fit the Gas FID to find the exact gas frequency
         self.gas_fit_params, self.newGasFrequency = self.fit_GAS_FID()
+        # 3) Fit the Gas Decay to find the exact flip angle (and in turn the correct coil voltage)
         self.getFlipAngle()
+        # 4) Fit the DP FID to find the frequencies, areas, etc of each resonance
         self.DP_fit_params = self.fit_DP_FID()
+        # 4a) Get RBC to Membrane ratio
         self.RBC2MEMsig = self.DP_fit_params[0,0]/self.DP_fit_params[1,0]
+        # 4b) Correct RBC/MEM based on off-resonance excitation
         _,_,self.RBC2MEMmag,self.RBC2MEMdix = self.correctRBC2MEM(self.DP_fit_params[0,0],self.DP_fit_params[1,0],self.DP_fit_params[0,1],self.DP_fit_params[1,1])
+        # 4c) Calculate the TE90 (time after excitation at which RBC and MEM are 90° out of phase for 1-pt Dixon)
         deltaPhase = (self.DP_fit_params[0,2] - self.DP_fit_params[1,2])
         deltaPhase = np.mod(np.abs(deltaPhase),180)
         deltaF = abs(self.DP_fit_params[0,1] - self.DP_fit_params[1,1])
         self.TE90 = int(self.scanParameters['TE'])*1e-3 + 1e3*(90 - deltaPhase)/(360 * deltaF) # -- in ms
         print(f"TE90 = {self.TE90}")
+        # 4d) Calculate the chemical shifts of RBC and MEM from Gas
         self.RBCppm = 1e6*(self.DP_fit_params[0,1]-self.DP_fit_params[2,1])/self.newGasFrequency
         self.MEMppm = 1e6*(self.DP_fit_params[1,1]-self.DP_fit_params[2,1])/self.newGasFrequency
+        # 5) Calcualte dynamic RBC/MEM ratio by fitting all acquired FIDs
         if wiggles:
             self.fit_all_DP_FIDs(goFast=True)
         try:
@@ -228,6 +236,7 @@ class FlipCal:
             n_GAS_FIDs = 20
             n_RO_pts_to_skip = 0
             n_pts_to_steady_state = 100
+        ## -- First we separate the the columns of the FID matrix into the 3 separate matrices for analysis
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
