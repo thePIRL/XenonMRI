@@ -256,7 +256,7 @@ class FlipCal:
     
     def FIDFitfunction(self, t, A, f, phi, L, G):
         '''t: time [s], A: amplitude [arb], f: frequency [Hz], phi: phase [°], L: Lorentzian fwhm [Hz], G: Gaussian fwhm [Hz]'''
-        return A * np.exp(1j*phi*np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 2* np.log(2) * G**2)
+        return A * np.exp(1j*phi*np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
     
     def fit_GAS_FID(self,FID=None):
         '''Fits the SVD gas RO. t [sec], A [arb], phi [radians], f [Hz], L [Hz]. Note L * pi = 1/T2star'''
@@ -264,7 +264,7 @@ class FlipCal:
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
             FID = self.GASfid
         def gasFitFunction(t, A, f, phi, L, G):
-            x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 2* np.log(2) * G**2)
+            x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
             return np.concatenate((x.real,x.imag))
         data = np.concatenate((FID.real,FID.imag))
         gas_fit_params, _ = curve_fit(gasFitFunction, self.t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
@@ -353,8 +353,8 @@ class FlipCal:
             print(f"\033[36mRBC:\033[37m {np.round(de[0,0]/de[1,0],3)} -- {np.round(de[0,1],0)} -- {np.round(de[0,2],1)} -- {np.round(de[0,3],1)} -- {np.round(de[0,4],1)}")
             print(f"\033[36mMEM:\033[37m {np.round(de[1,0]/de[1,0],3)} -- {np.round(de[1,1],0)} -- {np.round(de[1,2],1)} -- {np.round(de[1,3],1)} -- {np.round(de[1,4],1)}")
             print(f"\033[36mGAS:\033[37m {np.round(de[2,0]/de[1,0],3)} -- {np.round(de[2,1],0)} -- {np.round(de[2,2],1)} -- {np.round(de[2,3],1)} -- {np.round(de[2,4],1)}")
-            _,_,RBC2MEMmag,RBC2MEMdix = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
-            print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},\033[37m\n")
+            # _,_,RBC2MEMmag,RBC2MEMdix = self.correctRBC2MEM(de[0,0],de[1,0],de[0,1],de[1,1])
+            # print(f"\033[36mRBC2MEM magnitude = {RBC2MEMmag},  RBC2MEM dixon = {RBC2MEMdix},\033[37m\n")
         
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
 
