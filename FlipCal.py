@@ -169,7 +169,7 @@ class FlipCal:
             print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
             self.FID = np.zeros((512,520))
             self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':34081625, 'dissolvedFrequencyOffset':7090, 'PulseDuration': 670,'n_RO_pts_to_skip':0}
-            self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
+            self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])
         else:
             print(f"\n \033[35m # ------ FlipCal object initialized {self.patientInfo['PatientName']} from {self.scanParameters['scanDate']} of shape {self.FID.shape} was loaded ------ #\033[37m")
     
@@ -253,16 +253,19 @@ class FlipCal:
         [U,S,VT] = np.linalg.svd(self.GAS[n_RO_pts_to_skip:,:])
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
         self.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
+        self.t = self.t[n_RO_pts_to_skip:]
     
     def FIDFitfunction(self, t, A, f, phi, L, G):
         '''t: time [s], A: amplitude [arb], f: frequency [Hz], phi: phase [°], L: Lorentzian fwhm [Hz], G: Gaussian fwhm [Hz]'''
         return A * np.exp(1j*phi*np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
     
-    def fit_GAS_FID(self,FID=None):
+    def fit_GAS_FID(self,t=None,FID=None):
         '''Fits the SVD gas RO. t [sec], A [arb], phi [radians], f [Hz], L [Hz]. Note L * pi = 1/T2star'''
         print('\033[33m --- FIT GAS FID ---\033[37m')
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
             FID = self.GASfid
+        if t is None: # -- If no time vector is input, it uses the attribute t
+            t = self.t
         def gasFitFunction(t, A, f, phi, L, G):
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
             return np.concatenate((x.real,x.imag))
