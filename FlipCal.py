@@ -304,10 +304,8 @@ class FlipCal:
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
             FID = self.DPfid
-            print(f'\033[33mDPfid shape = {self.DPfid.shape}\033[37m')
         if t is None: # -- If no time vector is input, it uses the attribute t
             t = self.t_svd
-            print(f'\033[33mt_svd = {self.t_svd.shape}\033[37m')
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
@@ -922,7 +920,8 @@ class FlipCal:
         ## --- CREATE FIGURE--- ##
         if save_path is None:
             save_path = f"C:/PIRL/data/FlipCal_{self.patientInfo['PatientName']}.png"
-        fig = plt.figure(constrained_layout=True)
+        fig = plt.figure()
+        # fig = plt.figure(constrained_layout=True)
         fig.set_size_inches(18,9)
         gs = fig.add_gridspec(4, 8, left=0.05, right=0.95, hspace=0.5, wspace=0.5)
         ax1 = fig.add_subplot(gs[0,0:2])
