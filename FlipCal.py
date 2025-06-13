@@ -253,7 +253,7 @@ class FlipCal:
         [U,S,VT] = np.linalg.svd(self.GAS[n_RO_pts_to_skip:,:])
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
         self.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
-        self.t = self.t[n_RO_pts_to_skip:]
+        self.t_svd = self.t[n_RO_pts_to_skip:]
     
     def FIDFitfunction(self, t, A, f, phi, L, G):
         '''t: time [s], A: amplitude [arb], f: frequency [Hz], phi: phase [°], L: Lorentzian fwhm [Hz], G: Gaussian fwhm [Hz]'''
@@ -264,13 +264,15 @@ class FlipCal:
         print('\033[33m --- FIT GAS FID ---\033[37m')
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
             FID = self.GASfid
-        if t is None: # -- If no time vector is input, it uses the attribute t
-            t = self.t
+            print(f'\033[33mGASfid shape = {FID.shape}\033[37m')
+        if t is None: # -- If no time vector is input, it uses the attribute t_svd
+            t = self.t_svd
+            print(f'\033[33mt_svd = {t.shape}\033[37m')
         def gasFitFunction(t, A, f, phi, L, G):
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
             return np.concatenate((x.real,x.imag))
         data = np.concatenate((FID.real,FID.imag))
-        gas_fit_params, _ = curve_fit(gasFitFunction, self.t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
+        gas_fit_params, _ = curve_fit(gasFitFunction, t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
         gas_fit_params[2] = ((gas_fit_params[2] + 180) % 360) - 180
         if gas_fit_params[0] < 0:
             gas_fit_params[0] = -gas_fit_params[0]
@@ -304,8 +306,10 @@ class FlipCal:
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
             FID = self.DPfid
+            print(f'\033[33mDPfid shape = {self.DPfid.shape}\033[37m')
         if t is None: # -- If no time vector is input, it uses the attribute t
-            t = self.t
+            t = self.t_svd
+            print(f'\033[33mt_svd = {self.t_svd.shape}\033[37m')
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
@@ -362,8 +366,8 @@ class FlipCal:
         return de # ROWS are RBC [0], MEM [1], GAS [2].  COLS are Area[0], frequency[1] in Hz, phase[2] in °, L[3] in Hz, G[4] in Hz
 
     @staticmethod
-    def fit_DP_FID_static(FID, scanParameters):
-        t = np.arange(len(FID)) * scanParameters['dwellTime']
+    def fit_DP_FID_static(t, FID, scanParameters):
+        #t = np.arange(len(FID)) * scanParameters['dwellTime']
         S = np.concatenate((FID.real, FID.imag))
 
         def FIDfunc_cf(t, *params):
@@ -436,10 +440,11 @@ class FlipCal:
 
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
         if goFast:
-            print("\033[35mFitting all DP FIDs on all CPU cores...\033[37m")
+            skp = self.scanParameters['n_RO_pts_to_skip']
+            print("\033[35mFitting all DP FIDs on all CPU cores. Skipping {skp} RO points in fits...\033[37m")
             with tqdm_joblib(tqdm(desc="Fitting ROIs", total=data.shape[1])) as progress_bar:
                 results = Parallel(n_jobs=-1, backend='loky')(
-                    delayed(self.fit_DP_FID_static)(self.FID[:, i], self.scanParameters.copy())
+                    delayed(self.fit_DP_FID_static)(self.t[skp:],self.FID[skp:, i], self.scanParameters.copy())
                     for i in range(data.shape[1])
                 )
             for i, res in enumerate(results):
@@ -458,7 +463,7 @@ class FlipCal:
             self.RO_fit_params = RO_fit_params
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
-            self.RBC2MEMmag = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
+            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles)
         else:
             print('Returning Values')
             self.results = RO_fit_params
@@ -645,7 +650,7 @@ class FlipCal:
         self.scanParameters['n_GAS_FIDs'] =  int(self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '3')]) # No of GAS FIDs
         #self.scanParameters['DisFrequencyOffset'] = self.twix.hdr.Phoenix["sWipMemBlock", "alFree", "4"]
         self.scanParameters['dissolvedFrequencyOffset'] = self.twix.hdr.MeasYaps[('sWipMemBlock', 'alFree', '4')] # How many Hz away from Gas are we exciting DP?
-        self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime'])[self.scanParameters['n_RO_pts_to_skip']:]
+        self.t = (np.arange(self.FID.shape[0])*self.scanParameters['dwellTime']) # the time vector
     
     def parseMatlab(self):
         '''Note that the newest version of the matlab Processing code (8/2024 and later) contains
@@ -758,9 +763,9 @@ class FlipCal:
         ax5.set_title('Gas FID')
         T = np.linspace(-0.43e-3,10e-3,1000)
         gasFit = self.FIDFitfunction(T,*self.gas_fit_params)
-        ax5.plot(self.t*1000,self.GASfid.real,c=(0,0.7,0)) # -- Plot the actual Gas FID
-        ax5.plot(self.t*1000,self.GASfid.imag,c=(0.4,0,0.7))
-        ax5.plot(self.t*1000,abs(self.GASfid),c=(0,0,0))
+        ax5.plot(self.t_svd*1000,self.GASfid.real,c=(0,0.7,0)) # -- Plot the actual Gas FID
+        ax5.plot(self.t_svd*1000,self.GASfid.imag,c=(0.4,0,0.7))
+        ax5.plot(self.t_svd*1000,abs(self.GASfid),c=(0,0,0))
         ax5.plot(T*1000,gasFit.real,linestyle='dashed',c=(0,0.7,0)) # -- Now plot the fit (dashed)
         ax5.plot(T*1000,gasFit.imag,linestyle='dashed',c=(0.4,0,0.7))
         ax5.plot(T*1000,abs(gasFit),linestyle='dashed',c=(0,0,0))
@@ -788,9 +793,6 @@ class FlipCal:
     
     def draw_DP_phasor(self,axc):
         TE = int(self.scanParameters['TE'])*1e-6
-        RBC_n0 = self.FIDFitfunction(0, *self.DP_fit_params[0,:])
-        MEM_n0 = self.FIDFitfunction(0, *self.DP_fit_params[1,:])
-        GAS_n0 = self.FIDFitfunction(0, *self.DP_fit_params[2,:])
         RBC_nTE = self.FIDFitfunction(-TE, *self.DP_fit_params[0,:])
         MEM_nTE = self.FIDFitfunction(-TE, *self.DP_fit_params[1,:])
         GAS_nTE = self.FIDFitfunction(-TE, *self.DP_fit_params[2,:])
@@ -814,8 +816,8 @@ class FlipCal:
         ax8.set_title('DP FID')
         ax8.hlines(y=0,xmin=0,xmax=self.t[-1]*1000,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
         ax8.vlines(x=0,ymin=-0.6,ymax=0.6,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
-        ax8.plot(self.t*1000,self.DPfid.real,c=(0,0.7,0))
-        ax8.plot(self.t*1000,self.DPfid.imag,c=(0.4,0,0.7))
+        ax8.plot(self.t_svd*1000,self.DPfid.real,c=(0,0.7,0))
+        ax8.plot(self.t_svd*1000,self.DPfid.imag,c=(0.4,0,0.7))
         #ax8.plot(T*1000,abs(TOT_t),c=(0,0,0),linestyle='dashed')
         ax8.plot(T*1000,TOT_t.real,c=(0,0.7,0),linestyle='dashed',linewidth=0.5)
         ax8.plot(T*1000,TOT_t.imag,c=(0.4,0,0.7),linestyle='dashed',linewidth=0.5)
@@ -1001,12 +1003,12 @@ class FlipCal:
         plt.savefig(save_path)
         print(f"\033[36mPrintout saved to \033[33m{save_path}\033[37m")
     
-    def dicomPrintout(self,dummy_dicom_path = None,save_path = 'c:/pirl/data/'):
+    def exportDICOM(self,dummy_dicom_path = None,save_path = 'c:/pirl/data/'):
         '''Creates a 3D DICOM file (enhanced) where each image is a matplotlib pyplot.
         For each plot we want to dicomize, we create a plot then convert to numpy array.
         Then each array is stacked and a DICOM file is created (need to try this on PACS)'''
         if dummy_dicom_path is None:
-            print("Argument 'dummy_dicom_path' is not specified for dicomPrintout(), aborting DICOM printout")
+            print("Argument 'dummy_dicom_path' is not specified for exportDICOM(), aborting DICOM printout")
             return
         # -- 1 - Gas Decay and Flip Angle
         fig_size = (7,4)
@@ -1112,33 +1114,6 @@ class FlipCal:
             output_path = os.path.join(save_path, f"FlipCal_{image_set_index:03d}.dcm")
             dicom_file.save_as(output_path)
             print(f"Saved: {output_path}")
-        # - Create and save a dicom - #
-        # file_meta = dicom.dataset.FileMetaDataset()
-        # file_meta.MediaStorageSOPClassUID = dicom.uid.generate_uid()
-        # file_meta.MediaStorageSOPInstanceUID = dicom.uid.generate_uid()
-        # file_meta.ImplementationClassUID = dicom.uid.generate_uid()
-        # ds = dicom.dataset.FileDataset("output.dcm", {}, file_meta=file_meta, preamble=b"\0" * 128)
-        # ds.PatientName = self.patientInfo['PatientName']
-        # ds.PatientID = self.patientInfo['PatientID']
-        # ds.StudyInstanceUID = dicom.uid.generate_uid()
-        # ds.SeriesInstanceUID = dicom.uid.generate_uid()
-        # ds.SOPInstanceUID = dicom.uid.generate_uid()
-        # ds.Modality = "MR"
-        # ds.StudyDate = datetime.datetime.now().strftime("%Y%m%d")
-        # ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
-        # ds.Manufacturer = self.scanParameters['systemVendor']
-        # # Image data specifics for RGB
-        # ds.NumberOfFrames, ds.Rows, ds.Columns, _ = image_data.shape
-        # ds.SamplesPerPixel = 3  # RGB
-        # ds.PhotometricInterpretation = "RGB"
-        # ds.PlanarConfiguration = 0  # 0: RGBRGB... (interleaved), 1: RRR...GGG...BBB...
-        # ds.BitsAllocated = 8  # 8 bits per channel
-        # ds.BitsStored = 8
-        # ds.HighBit = 7
-        # ds.PixelRepresentation = 0  # Unsigned integer
-        # ds.PixelData = image_data.tobytes()
-        # # Save to file
-        # ds.save_as(save_path)
     
     def pickleMe(self, pickle_path='C:/PIRL/data/FlipCalPickle.pkl'):
         '''Uses dictionary comprehension to create a dictionary of all class attributes, then saves as pickle'''
@@ -1159,8 +1134,13 @@ class FlipCal:
             setattr(self, attr, value)
 
     def exportNumpy(self,path = 'c:/pirl/data/FlipCal'):
-        '''Saves the FID array as a numpy'''
-        np.save(path,self.FID)
+        array_dict = {
+            key: getattr(self, key)
+            for key in dir(self)
+            if not key.startswith("_")
+            and isinstance(getattr(self, key, None), np.ndarray)
+        }
+        np.savez(path, **array_dict)
     
     def exportISMRMRD(self,path='c:/pirl/data/ISMRMRD.h5'):
             '''Consortium-Required Parameters: https://github.com/Xe-MRI-CTC/siemens-to-mrd-converter'''
@@ -1221,13 +1201,31 @@ class FlipCal:
             print(f'ISMRMRD h5 file written to {path}')
 
     def completeExport(self, parent_dir='c:/tmp/',dummy_dicom_path=None):
+        '''Saves the pickle, printout, numpy, and DICOM (need ISMRMRD next)'''
         SAVEpath = os.path.join(parent_dir,f"FlipCal_{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}/")
+        print(f'\033[35m -- Exporting FlipCal to {SAVEpath}\033[37m')
         os.makedirs(SAVEpath,exist_ok=True)
-        self.pickleMe(pickle_path=os.path.join(SAVEpath,f"{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}.pkl"))
-        self.printout(save_path=os.path.join(SAVEpath,f"{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}.png"))
-        self.exportNumpy(path=os.path.join(SAVEpath,f"FlipCal_numpy"))  
+        try:
+            self.pickleMe(pickle_path=os.path.join(SAVEpath,f"{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}.pkl"))
+        except Exception as e:
+            print(f'\033[31mPickle Export Failed: {e}\033[37m')
+        try:
+            self.printout(save_path=os.path.join(SAVEpath,f"{self.patientInfo['PatientName']}_{self.scanParameters['scanDate']}.png"))
+        except Exception as e:
+            print(f'\033[31mPrintout Export Failed: {e}\033[37m')
+        try:
+            self.exportNumpy(path=os.path.join(SAVEpath,f"FlipCal_numpys"))  
+            print(f'\033[32mNumpy exported to {os.path.join(SAVEpath,f"FlipCal_numpys")}\033[37m')
+        except Exception as e:
+            print(f'\033[31mNumpy Export Failed: {e}\033[37m')
         if dummy_dicom_path is not None:
-            self.dicomPrintout(dummy_dicom_path=dummy_dicom_path,save_path=os.path.join(SAVEpath,f"FlipCal_DICOMS"))
+            try:
+                print(f' --- {dummy_dicom_path} --- ')
+                self.exportDICOM(dummy_dicom_path=dummy_dicom_path,save_path=os.path.join(SAVEpath,f"FlipCal_DICOMS"))
+            except Exception as e:
+                print(f'\033[31mDICOM Export Failed: {e}\033[37m')
+        else:
+            print(f'\033[33mNo dicom_dummy given so no dicoms saved\033[37m')
     
     def extract_attributes(self, attr_dict, parent_key='', sep='_'):
         """Helper method which creates a single dictionary from an attribute dictionary"""
@@ -1484,29 +1482,15 @@ if __name__ == "__main__":
             except:
                 FA.process()
                 updateWiggles()
-## --------------- SAVE PICKLE BUTTON --------------------------- ##
+## --------------- SAVE Data BUTTON --------------------------- ##
         elif event == ('savedata'):
+            path = values['dummy_dicom_path'].strip().replace('"', '')
+            if path.startswith("\\") and not path.startswith("\\\\"):
+                path = "\\" + path  # Add a second backslash if missing
+            dummy_dicom_path = path.replace("\\", "/") or None
             SAVEpath = os.path.join(values['SAVEpath'].replace('"',''),f"FlipCal_{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}/")
-            if not os.path.isdir(SAVEpath):
-                os.makedirs(SAVEpath)
-            try:
-                FA.pickleMe(pickle_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.pkl"))
-            except:
-                print('Pickle save failed at GUI level')    
-            try:
-                FA.printout(save_path=os.path.join(SAVEpath,f"{FA.patientInfo['PatientName']}_{FA.scanParameters['scanDate']}.png"))
-            except:
-                print('Printout save failed at GUI level')    
-            try:
-                dummy_dicom_path = values['dummy_dicom_path'].replace('"','')
-                FA.dicomPrintout(dummy_dicom_path= dummy_dicom_path,save_path=os.path.join(SAVEpath,f"FlipCal_DICOMS"))
-            except:
-                print('DICOM save failed at GUI level')    
-            try:
-                dummy_dicom_path = values['dummy_dicom_path'].replace('"','')
-                FA.exportNumpy(path=os.path.join(SAVEpath,f"FlipCal_numpy"))
-            except:
-                print('DICOM save failed at GUI level')    
+            #dummy_dicom_path = os.path.normpath(values['dummy_dicom_path']).replace('"','') or None
+            FA.completeExport(parent_dir=values['SAVEpath'],dummy_dicom_path=dummy_dicom_path)   
 ## --------------- Info Edit Buttons ------------------- ##
         elif event == ('editPatientName'):
             text = sg.popup_get_text('Enter Subject ID: ',default_text=FA.patientInfo['PatientName'])
@@ -1520,3 +1504,6 @@ if __name__ == "__main__":
             text = sg.popup_get_text('Enter DE [mL]: ',default_text=FA.patientInfo['DE'])
             window['DE'].update(f'DE: {text}')
             FA.patientInfo['scanDate'] = text
+
+
+#FA.exportDICOM(dummy_dicom_path=os.path.normpath(r"\\umh.edu\data\Radiology\Xenon_Studies\Studies\General_Xenon\Gen_Xenon_Studies\Xe-0093 - 250411 - healthy_exercise\DICOM\25041120\11260000\52699188"))
