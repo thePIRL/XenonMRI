@@ -264,10 +264,8 @@ class FlipCal:
         print('\033[33m --- FIT GAS FID ---\033[37m')
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
             FID = self.GASfid
-            print(f'\033[33mGASfid shape = {FID.shape}\033[37m')
         if t is None: # -- If no time vector is input, it uses the attribute t_svd
             t = self.t_svd
-            print(f'\033[33mt_svd = {t.shape}\033[37m')
         def gasFitFunction(t, A, f, phi, L, G):
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
             return np.concatenate((x.real,x.imag))
