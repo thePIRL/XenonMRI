@@ -107,7 +107,7 @@ class FlipCal:
                          'n_RO_pts_to_skip': 2}
         
         # -- Created Attributes in SVD() -- ##
-        self.singular_values_to_keep = 2
+        self.singular_values_to_keep = 3
         self.noise = '' # --------------- Single noise FID (column 0 of FID) 
         self.DP = '' # ------------------ Dissolved phase FIDs (columns 1:499) 
         self.GAS = '' # ----------------- Gas FIDs (columns 500:519) 
@@ -229,6 +229,7 @@ class FlipCal:
             n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
             n_RO_pts_to_skip = self.scanParameters['n_RO_pts_to_skip']
             n_pts_to_steady_state = self.scanParameters['n_FIDs_to_steady_state']
+            n_SVDs = self.singular_values_to_keep
         except:
             print('\033[33mn_noise_FIDs, n_DP_FIDs, n_GAS_FIDs, and/or n_RO_pts_to_skip are not in scanParameter dict. Defaulting to values 1, 499, 20, and 0 respectively...')
             n_noise_FIDs = 1
@@ -236,19 +237,18 @@ class FlipCal:
             n_GAS_FIDs = 20
             n_RO_pts_to_skip = 0
             n_pts_to_steady_state = 100
+            n_SVDs = 3
         ## -- First we separate the the columns of the FID matrix into the 3 separate matrices for analysis
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
         ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
+        [U,S,VT] = np.linalg.svd(self.DP)
+        self.smooth_DP = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
         [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,n_pts_to_steady_state:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
         self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
-        # S[self.singular_values_to_keep:] = 0
-        # Smat = np.zeros((self.DP.shape[0],self.DP.shape[1]))
-        # Smat[:len(S),:len(S)] = np.diag(S)
-        # self.smoothDP = U @ Smat  @ VT #our experience shows this SVDing to denoise doesn't really help much
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS[n_RO_pts_to_skip:,:])
         self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
@@ -437,7 +437,7 @@ class FlipCal:
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
         if goFast:
             skp = self.scanParameters['n_RO_pts_to_skip']
-            print("\033[35mFitting all DP FIDs on all CPU cores. Skipping {skp} RO points in fits...\033[37m")
+            print(f"\033[35mFitting all DP FIDs on all CPU cores. Skipping {skp} RO points in fits...\033[37m")
             with tqdm_joblib(tqdm(desc="Fitting ROIs", total=data.shape[1])) as progress_bar:
                 results = Parallel(n_jobs=-1, backend='loky')(
                     delayed(self.fit_DP_FID_static)(self.t[skp:],self.FID[skp:, i], self.scanParameters.copy())

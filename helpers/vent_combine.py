@@ -123,8 +123,8 @@ def tile_and_save_rgb_dicom_2x8(input_dirs, output_dir, stats_tuple, series_desc
     output_array = np.stack(full_stack, axis=2)
 
     template = pydicom.dcmread(sorted([f for f in Path(input_dirs[0]).iterdir() if f.is_file()])[0])
-    series_uid = generate_uid()
-    study_uid = generate_uid()
+    series_uid = template.SeriesInstanceUID  # reuse existing Series UID
+    study_uid = template.StudyInstanceUID    # reuse existing Study UID
     for z in range(N):
         new_ds = deepcopy(template)
         rgb_img = output_array[:, :, z, :]

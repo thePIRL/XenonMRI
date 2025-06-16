@@ -290,7 +290,7 @@ class Vent_Analysis:
             ((norm_vent > boxcox_thresholds[1]) & (norm_vent <= boxcox_thresholds[2])) * 3 +
             ((norm_vent > boxcox_thresholds[2]) & (norm_vent <= boxcox_thresholds[3])) * 4 +
             ((norm_vent > boxcox_thresholds[3]) & (norm_vent <= boxcox_thresholds[4])) * 5 +
-            (norm_vent > boxcox_thresholds[4]) * 6
+            (norm_vent > boxcox_thresholds[4]) * 6 
         ) * self.mask
         self.metadata['VDP_Glb'] = 100 * np.sum((self.defectArrayGLB == 1) + (self.defectArrayGLB == 2)) / np.sum(self.mask)
 

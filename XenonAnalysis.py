@@ -22,11 +22,11 @@ def find_my_data(parent_dir):
     xenoview_pos_pdf = ''
     GX_folder = ''
 
-    xenon_pre_folder = os.path.join(parent_dir,"xenon pre/DICOM/EXP00000/")
-    xenon_pos_folder = os.path.join(parent_dir,"xenon post/DICOM/EXP00000/")
-    proton_pre_folder = os.path.join(parent_dir,"proton pre/DICOM/EXP00000/")
-    if os.path.isdir(os.path.join(parent_dir,"proton pre/DICOM/EXP00000/")):
-        proton_pos_folder = os.path.join(parent_dir,"proton pre/DICOM/EXP00000/")
+    xenon_pre_folder = os.path.join(parent_dir,"xenon_pre/DICOM/EXP00000/")
+    xenon_pos_folder = os.path.join(parent_dir,"xenon_post/DICOM/EXP00000/")
+    proton_pre_folder = os.path.join(parent_dir,"proton_pre/DICOM/EXP00000/")
+    if os.path.isdir(os.path.join(parent_dir,"proton_pre/DICOM/EXP00000/")):
+        proton_pos_folder = os.path.join(parent_dir,"proton_pre/DICOM/EXP00000/")
     else:
         proton_pos_folder = proton_pre_folder
     calibration_twix_path = glob.glob(os.path.join(parent_dir,'*_dyn.dat'))[0]
@@ -82,7 +82,7 @@ def PACS_runner(parent_dir,
     FA = FlipCal.FlipCal(twix_path = calibration_twix_path)
     FA.process(wiggles=False)
     FA.completeExport(parent_dir=parent_dir,dummy_dicom_path=os.path.join(xenon_pre_folder,os.listdir(xenon_pre_folder)[0]))
-    FA.dicomPrintout(dummy_dicom_path = dicom_pre_template_path,save_path = os.path.join(PACS_dir,'FlipCal'))
+    # FA.dicomPrintout(dummy_dicom_path = dicom_pre_template_path,save_path = os.path.join(PACS_dir,'FlipCal'))
     print(f"\033[33mFlipCal processed successfully.\033[37m")
 
 
@@ -111,11 +111,11 @@ def PACS_runner(parent_dir,
             os.path.join(xenoview_pos_folder,'anatomical-ventilation-map/anatomical-ventilation-map-volume'))
     stats = (VentPre.metadata['PatientName'],
         VentPre.metadata['StudyDate'],
-        VentPre.metadata['LungVolume'],
+        np.round(VentPre.metadata['LungVolume'],1),
         np.round(VentPre.metadata['LungVolume']*VentPre.metadata['VDP']/100*1000,1),
         np.round(VentPre.metadata['VDP']),
         xenoview_pre_VDP,
-        VentPos.metadata['LungVolume'],
+        np.round(VentPos.metadata['LungVolume'],1),
         np.round(VentPos.metadata['LungVolume']*VentPos.metadata['VDP']/100*1000,1),
         np.round(VentPos.metadata['VDP']),
         xenoview_pos_VDP,
@@ -168,7 +168,8 @@ def PACS_runner(parent_dir,
                         os.path.join(PACS_dir,'GX_report'),
                         os.path.join(xenon_pos_folder,os.listdir(xenon_pos_folder)[0]),
                         f"GX_report")
-    print(f"\033[33PDFs converted and saved successfully.\033[37m")
+    print(f"\033[32mPDFs converted and saved successfully.\033[37m")
+    print(f"\033[32mDone!\033[37m")
 
 
 

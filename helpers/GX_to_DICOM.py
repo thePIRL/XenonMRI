@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import pydicom
 from pydicom.dataset import Dataset
+from PIL import Image, ImageDraw, ImageFont
 
 
 def numpy_to_dicom(numpy_array, dicom_template, output_folder, series_description='np_to_DICOM',slice_locations=None,voxel_size = None):
@@ -101,6 +102,10 @@ def tile_arrays_2x3_rgb(arrays):
         rgb_arrays.append(rgb)
     # Initialize output array
     output = np.zeros((256, 384, 128, 3), dtype=rgb_arrays[0].dtype)
+    try:
+        font = ImageFont.truetype("arial.ttf", 14)
+    except:
+        font = ImageFont.load_default()
     for z in range(128):
         # Extract the z-th slice from each array (shape: 128x128x3)
         tiles = [arr[:, :, z, :] for arr in rgb_arrays]
@@ -109,7 +114,13 @@ def tile_arrays_2x3_rgb(arrays):
         row2 = np.concatenate(tiles[3:], axis=1)  # shape (128, 384, 3)
         stacked = np.concatenate([row1, row2], axis=0)  # shape (256, 384, 3)
         # Assign to output
-        output[:, :, z, :] = stacked
+        pil_img = Image.fromarray(stacked)
+        draw = ImageDraw.Draw(pil_img)
+        draw.text((50, 230), 'GAS', fill=(255, 255, 255), font=font)
+        draw.text((33 + 128, 230), 'MEM/GAS', fill=(255, 255, 255), font=font)
+        draw.text((35 + 256, 230), 'RBC/GAS', fill=(255, 255, 255), font=font)
+        montage_with_text = np.array(pil_img)
+        output[:, :, z, :] = montage_with_text
     return output
 
 
