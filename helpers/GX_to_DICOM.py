@@ -166,34 +166,6 @@ def find_file_paths(directory: str, filenames: tuple) -> dict:
         result[fname] = full_path if os.path.isfile(full_path) else ''
     return result
 
-# direc = 'c:/tmp/'
-# tups = ('0001.png','gifme.bat','asdf.png')
-# a = find_file_paths(direc,tups)
-# a
-
-
-# # --- Convert the GX numpys and niftis to DICOMS --- #
-# GAS = rescale_to_255(nifti_to_numpy("C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/tmp/image_gas_highreso.nii"))
-# MEM = rescale_to_255(nifti_to_numpy("C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/tmp/membrane.nii"))
-# RBC = rescale_to_255(nifti_to_numpy("C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/tmp/rbc.nii"))
-# GASrgb = rescale_to_255(np.load("C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/gas_rgb.npy"))
-# MEMrgb = rescale_to_255(np.load("C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/membrane2gas_rgb.npy"))
-# RBCrgb = rescale_to_255(np.load("C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/rbc2gas_rgb.npy"))
-
-# GASrgb = add_colorbar(GASrgb,type='gas')
-# MEMrgb = add_colorbar(MEMrgb,type='mem')
-# RBCrgb = add_colorbar(RBCrgb,type='rbc')
-# GX = tile_arrays_2x3_rgb((GAS,MEM,RBC,GASrgb,MEMrgb,RBCrgb))
-
-# dicom_template = "C:/tmp/post_xenon/DICOM/EXP00000/EXP0009"
-# output_folder = "C:/xenon-gas-exchange-consortium_GabyEdits_250224/assets/Clinical0029_FCL/GX_dicoms"
-# series_description = "GX - Gas, Membrane, RBC"
-# numpy_to_dicom(numpy_array=GX,
-#                dicom_template=dicom_template,
-#                output_folder=output_folder,
-#                series_description=series_description)
-
-
 
 
 if __name__ == '__main__':
@@ -208,9 +180,9 @@ if __name__ == '__main__':
         [sg.Text('Numpy MEM (RGB) :'), sg.Input(key='numpy_mem', default_text="membrane2gas_rgb.npy", size=(800, 1))],
         [sg.Text('Numpy RBC (RGB) :'), sg.Input(key='numpy_rbc', default_text="rbc2gas_rgb.npy", size=(800, 1))],
         [sg.VerticalSeparator(color='blue',pad = 12)],
-        [sg.Text('Output Directory (will create if needed):'), sg.Input(key='output_directory', default_text="C:/Users/rptho/Pictures/newnames2/", size=(800, 1))],
-        [sg.Text('Dicom Template:'), sg.Input(key='dicom_template', default_text="C:/Users/rptho/Pictures/newnames2/", size=(800, 1))],
-        [sg.Text('New Series Description:'), sg.Input(key='new_series_description', default_text="C:/Users/rptho/Pictures/newnames2/", size=(800, 1))],
+        [sg.Text('Output Directory (will create if needed):'), sg.Input(key='output_directory', size=(800, 1))],
+        [sg.Text('Dicom Template:'), sg.Input(key='dicom_template', size=(800, 1))],
+        [sg.Text('New Series Description:'), sg.Input(key='new_series_description', size=(800, 1))],
         [sg.Button('Convert', key='run')],
         [sg.Text("I'm ready to convert a PDF to DICOM using the template's header info.", key='text')]
     ]

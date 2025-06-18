@@ -809,60 +809,6 @@ def extract_attributes(attr_dict, parent_key='', sep='_'):
 
 
 
-# # ## -- Test Code -- ##
-# DICOM_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0039 - 240301/Pre-Alb/DICOM/24030116/46420001/48522586_Xe'
-# MASK_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0039 - 240301/Pre-Alb/DICOM/HPImg/Mask'
-# PROTON_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/MEPO/MEPO_Studies/MEPOXE0039 - 240301/Pre-Alb/DICOM/HPImg/48522597'
-# Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
-# Vent1.calculate_VDP()
-
-# # ## -- Test Code -- ##
-# DICOM_path = 'C:/PIRL/data/MEPOXE0039/48522586xe'
-# MASK_path = 'C:/PIRL/data/MEPOXE0039/Mask'
-# PROTON_path = 'C:/PIRL/data/MEPOXE0039/48522597prot'
-# Vent1 = Vent_Analysis(proton_path=PROTON_path, xenon_path=DICOM_path, mask_path=MASK_path)
-# Vent1.calculate_VDP()
-
-# # EXPORT_path = 'C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_testing/'
-# # if not os.path.isdir(EXPORT_path):
-# #     os.makedirs(EXPORT_path)
-
-# EXPORT_path = 'C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_testing/'
-# Vent1.exportNifti(EXPORT_path,'nifti.nii')
-# Vent1.dicom_to_json(Vent1.ds, json_path=os.path.join(EXPORT_path,f'json.json'))
-# Vent1.pickleMe(pickle_path=os.path.join(EXPORT_path,f'pkl.pkl'))
-# Vent1.screenShot(path=os.path.join(EXPORT_path,f'png.png'))
-# Vent1.exportDICOM(Vent1.ds,EXPORT_path,optional_text='testing',forPACS=True)
-
-# # for attr, value in Vent1.metadata.items():
-# #     print(f'{attr} is a {type(value)}')
-
-# Vent2 = Vent_Analysis(pickle_path=os.path.join(EXPORT_path,f'pkl.pkl'))
-# Vent2.exportDICOM(Vent1.ds,EXPORT_path,optional_text='testing',forPACS=True)
-# Vent2.exportNumpys('C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241113')
-
-# Vent3 = Vent_Analysis(pickle_path="//umh.edu/data/Radiology/Xenon_Studies/Studies/General_Xenon/Gen_Xenon_Studies/Xe-0078 - 240213 - pnemonia_lung toxicity_partial lobectomy/Xe-0078_240208_preAlb.pkl")
-
-# with open('C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241113/numpys/metadata.json', 'w') as json_file:
-#     json.dump(Vent2.metadata, json_file, indent=4)
-
-# Vent1 = Vent_Analysis(pickle_path="C:/tmp/VentAnalysis_RPT_250413/Clinical_FCL_250410_visit1_Albuterol.pkl")
-# Vent1.exportDICOM(Vent1.ds,save_dir = 'c:/tmp/',optional_text='RPT2',series_description='Vent_VDP=%')
-
-# def get_slice_locations_from_folder(folder_path):
-#     slice_locations = []
-#     for filename in os.listdir(folder_path):
-#         file_path = os.path.join(folder_path, filename)
-#         try:
-#             ds = dicom.dcmread(file_path, stop_before_pixels=True)
-#             slice_location = getattr(ds, 'SliceLocation', None)
-#             slice_locations.append(float(slice_location))
-#         except Exception as e:
-#             print(f"Skipping file {filename}: {e}")
-#             continue
-#     return slice_locations
-
-# get_slice_locations_from_folder("C:/tmp/pre_xenon/DICOM/EXP00000")
 ### ------------------------------------------------------------------------------------------------ ###
 ### ---------------------------------------- MAIN GUI SCRIPT --------------------------------------- ###
 ### ------------------------------------------------------------------------------------------------ ###
@@ -1099,7 +1045,7 @@ if __name__ == "__main__":
 
 ## --------------- Load Pickle ------------------- ##       
         elif event == ('-LOADPICKLE-'):
-            pickle_path = sg.popup_get_text('Enter Pickle Path: ',default_text="C:/PIRL/data/MEPOXE0039/VentAnalysis_RPT_241006/Mepo0039_240301.pkl").replace('"','')
+            pickle_path = sg.popup_get_text('Enter Pickle Path: ').replace('"','')
             Vent1 = Vent_Analysis(pickle_path=pickle_path)
             window['-STATUS-'].update("Vent_Analysis pickle loaded",text_color='green')
             window['-INITIALIZE-'].update(button_color = 'green')
