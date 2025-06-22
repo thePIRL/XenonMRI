@@ -426,10 +426,12 @@ class FlipCal:
             print('You gave me data')
             internalDataMarker = False
             data = kwargs['data']
+            t = self.t
         else:
             print('You did not give me data. Using self.DP')
             internalDataMarker = True
             data = self.DP
+            t = self.t
         goFast = kwargs.get('goFast', True)
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
@@ -440,7 +442,7 @@ class FlipCal:
             print(f"\033[35mFitting all DP FIDs on all CPU cores. Skipping {skp} RO points in fits...\033[37m")
             with tqdm_joblib(tqdm(desc="Fitting ROIs", total=data.shape[1])) as progress_bar:
                 results = Parallel(n_jobs=-1, backend='loky')(
-                    delayed(self.fit_DP_FID_static)(self.t[skp:],self.FID[skp:, i], self.scanParameters.copy())
+                    delayed(self.fit_DP_FID_static)(t[skp:],data[skp:, i], self.scanParameters.copy())
                     for i in range(data.shape[1])
                 )
             for i, res in enumerate(results):
@@ -451,7 +453,7 @@ class FlipCal:
             print("\033[35mFitting all DP FIDs on 1 CPU core. This may take awhile...\033[37m")
             for RO in tqdm(range(data.shape[1])):
             #for RO in tqdm(range(3)):
-                RO_fit_params[:,:,RO] = self.fit_DP_FID(self.FID[:,RO],printResult=False)
+                RO_fit_params[:,:,RO] = self.fit_DP_FID(data[:,RO],printResult=False)
         
         print(f"Time to fit all readouts: {np.round((time.time()-start_time)/60,2)} min")
         if internalDataMarker:
