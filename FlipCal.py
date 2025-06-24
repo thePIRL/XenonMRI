@@ -5,6 +5,7 @@ import mapvbvd # ---------------------------------- for reading Twix files - __i
 import pickle # ----------------------------------- for pickling class attributes - pickleMe() and unpickleMe()
 from scipy.optimize import curve_fit # ------------ for fitting the Gas FID and decay - fit_Gas_FID() and getFlipAngle()
 from scipy.optimize import differential_evolution, minimize # for fitting the DP FID - fit_DP_FID()
+from scipy.signal import hilbert
 import time # ------------------------------------- for calculating process times - fit_all_DP_FIDs()
 from tqdm import tqdm # --------------------------- for console build - fit_all_DP_FIDs()
 import datetime # --------------------------------- for analysis timestamps and dicom creation
@@ -246,7 +247,7 @@ class FlipCal:
         [U,S,VT] = np.linalg.svd(self.DP)
         self.smooth_DP = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
         [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,n_pts_to_steady_state:])
-        self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- The best representation of a single DP readout
+        self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- First FID mode 
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
         self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
@@ -485,11 +486,6 @@ class FlipCal:
         return Mrbc, Mmem, RBC2MEMmag, RBC2MEMdix
 
     def calcWiggleAmp(self,wiggles): 
-        def hilbert(S):
-            F = np.fft.fftshift(np.fft.fft(S))
-            F[:int(len(S)/2 + 1)] = 0
-            H = np.fft.ifft(np.fft.fftshift(F))
-            return H
         try:
             hilb = hilbert(wiggles)
             return 2*np.mean(np.abs(hilb)) # times 2 for Pk-pk
