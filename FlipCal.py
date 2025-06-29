@@ -105,7 +105,7 @@ class FlipCal:
                          'FieldStrength': '',
                          'FOV': '',
                          'n_FIDs_to_steady_state': 100,
-                         'n_RO_pts_to_skip': 2}
+                         'n_RO_pts_to_skip': 3}
         
         # -- Created Attributes in SVD() -- ##
         self.singular_values_to_keep = 3
@@ -243,9 +243,10 @@ class FlipCal:
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
-        ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
+        ## -- DP -- First we create the low-rank approximation of DP
         [U,S,VT] = np.linalg.svd(self.DP)
         self.smooth_DP = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
+        ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
         [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,n_pts_to_steady_state:])
         self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- First FID mode 
         self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
@@ -421,18 +422,22 @@ class FlipCal:
             RBC2MEMsig: RBC/membrane ratio for all readouts as a vector
             Mrbc: RBC magnetization (RBC signal corrected by excitation power)
             Mmem: MEM magnetization (MEM signal corrected by excitation power)
-            RBC2MEMmag: Ratio of RBC/membrane magnetization (this corrects for different excitation power at different frequencies)
-        Takes awhile. Need to get this going faster somehow.'''
+            RBC2MEMmag: Ratio of RBC/membrane magnetization (this corrects for different excitation power at different frequencies)'''
+        if 't' in kwargs:
+            t = kwargs['t']
+            print(f'You gave me a time vector of shape {t.shape}')
+        else:
+            t = self.t
         if 'data' in kwargs:
-            print('You gave me data')
             internalDataMarker = False
             data = kwargs['data']
-            t = self.t
+            print(f'You gave me data of shape {data.shape}')
         else:
-            print('You did not give me data. Using self.DP')
+            skp = self.scanParameters['n_RO_pts_to_skip']
+            print(f'Calculating all FId fits for class attribute self.DP of shape {self.DP.shape}. Skipping {skp} RO points in fits..')
             internalDataMarker = True
-            data = self.DP
-            t = self.t
+            data = self.DP[skp:,:]
+            t = self.t[skp:]
         goFast = kwargs.get('goFast', True)
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
         start_time = time.time()
@@ -440,10 +445,10 @@ class FlipCal:
         #-- Fast. Uses all CPU cores to process the data faster (default). May slow up your computer for a bit though
         if goFast:
             skp = self.scanParameters['n_RO_pts_to_skip']
-            print(f"\033[35mFitting all DP FIDs on all CPU cores. Skipping {skp} RO points in fits...\033[37m")
+            print(f"\033[35mFitting all DP FIDs on all CPU cores. .\033[37m")
             with tqdm_joblib(tqdm(desc="Fitting ROIs", total=data.shape[1])) as progress_bar:
                 results = Parallel(n_jobs=-1, backend='loky')(
-                    delayed(self.fit_DP_FID_static)(t[skp:],data[skp:, i], self.scanParameters.copy())
+                    delayed(self.fit_DP_FID_static)(t,data[:, i], self.scanParameters.copy())
                     for i in range(data.shape[1])
                 )
             for i, res in enumerate(results):
