@@ -61,7 +61,7 @@ class FlipCal:
         # -- 241025, metadata updated to scanParameters and patientInfo
         # -- 241009, version numbers should contain the sequence type (cal here)
         # -- 240926, repr fixed, concurrent futures working?
-        # -- 240925, amp is 2x hilber modulus
+        # -- 240925, amp is 2x hilbert modulus
         # -- 240924, Fixed TE90 issue and twix_dict is now just header so it can be pickled
         # -- 240918, First full version
         self.processDate = datetime.date.today().strftime("%y%m%d")
@@ -202,14 +202,15 @@ class FlipCal:
         if wiggles:
             self.fit_all_DP_FIDs(goFast=True)
         try:
+            n_ROs_to_skip = self.scanParameters['n_RO_pts_to_skip']
             self.RBC2MEMsig_wiggles = self.RO_fit_params[0,0,:]/self.RO_fit_params[1,0,:]
             _,_,self.RBC2MEMmag_wiggles,self.RBC2MEMdix_wiggles = self.correctRBC2MEM(self.RO_fit_params[0,0,:],self.RO_fit_params[1,0,:],self.RO_fit_params[0,1,:],self.RO_fit_params[1,1,:]) #(Srbc,Smem,wrbc,wmem)
-            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles[100:])
+            self.RBC2MEMmag_amp = self.calcWiggleAmp(self.RBC2MEMmag_wiggles[n_ROs_to_skip:])
             print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD and {np.mean(self.RBC2MEMsig_wiggles[100:])} from wiggles\033[37m")
             print(f"\033[33mThe RBC/MEM Magnet ratio was {self.RBC2MEMmag} from SVD and {np.mean(self.RBC2MEMmag_wiggles[100:])} from wiggles\033[37m")
             print(f"\033[33mThe RBC/MEM Dixon  should be {self.RBC2MEMdix} from SVD and {np.mean(self.RBC2MEMdix_wiggles[100:])} from wiggles\033[37m")
-            self.RBCppm_dyn = 1e6*(self.RO_fit_params[0,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
-            self.MEMppm_dyn = 1e6*(self.RO_fit_params[1,1,:]-self.RO_fit_params[2,1,:])/self.newGasFrequency
+            self.RBCppm_dyn = 1e6*(self.RO_fit_params[0,1,n_ROs_to_skip:]-self.RO_fit_params[2,1,n_ROs_to_skip:])/self.newGasFrequency
+            self.MEMppm_dyn = 1e6*(self.RO_fit_params[1,1,n_ROs_to_skip:]-self.RO_fit_params[2,1,n_ROs_to_skip:])/self.newGasFrequency
         except:
             print('RBC2MEM not not in attributes. Need to run fit_all_DP_FIDs() method to get wiggles.')
             print(f"\033[33mThe RBC/MEM Signal ratio was {self.RBC2MEMsig} from SVD\033[37m")
@@ -228,16 +229,12 @@ class FlipCal:
             n_noise_FIDs = self.scanParameters['n_noise_FIDs']
             n_DP_FIDs = self.scanParameters['n_DP_FIDs']
             n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
-            n_RO_pts_to_skip = self.scanParameters['n_RO_pts_to_skip']
-            n_pts_to_steady_state = self.scanParameters['n_FIDs_to_steady_state']
             n_SVDs = self.singular_values_to_keep
         except:
             print('\033[33mn_noise_FIDs, n_DP_FIDs, n_GAS_FIDs, and/or n_RO_pts_to_skip are not in scanParameter dict. Defaulting to values 1, 499, 20, and 0 respectively...')
             n_noise_FIDs = 1
             n_DP_FIDs = 499
             n_GAS_FIDs = 20
-            n_RO_pts_to_skip = 0
-            n_pts_to_steady_state = 100
             n_SVDs = 3
         ## -- First we separate the the columns of the FID matrix into the 3 separate matrices for analysis
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
@@ -245,17 +242,14 @@ class FlipCal:
         self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
         ## -- DP -- First we create the low-rank approximation of DP
         [U,S,VT] = np.linalg.svd(self.DP)
-        self.smooth_DP = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
-        ## -- DP -- Attributes are created for first U column (best single DP RO), first V column (decay), And second V column (oscillations)##
-        [U,S,VT] = np.linalg.svd(self.DP[n_RO_pts_to_skip:,n_pts_to_steady_state:])
-        self.DPfid = flipCheck(U[:,0]*S[0]**2,self.DP[:,0]) # --------------- First FID mode 
-        self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
-        self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
+        self.DP_lowRank = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
+        self.DPfid = flipCheck(U[:,0]*S[0] + U[:,1]*S[1],self.DP[:,0]) # --------------- First 2 FID modes represent the best approximation FID of the data
+        # self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
+        # self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
-        [U,S,VT] = np.linalg.svd(self.GAS[n_RO_pts_to_skip:,:])
-        self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
+        [U,S,VT] = np.linalg.svd(self.GAS)
+        self.GASfid = flipCheck(U[:,0]*S[0],self.GAS[:,0]) # ------------ The best representation of a single Gas readout
         self.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
-        self.t_svd = self.t[n_RO_pts_to_skip:]
     
     def FIDFitfunction(self, t, A, f, phi, L, G):
         '''t: time [s], A: amplitude [arb], f: frequency [Hz], phi: phase [°], L: Lorentzian fwhm [Hz], G: Gaussian fwhm [Hz]'''
@@ -265,9 +259,11 @@ class FlipCal:
         '''Fits the SVD gas RO. t [sec], A [arb], phi [radians], f [Hz], L [Hz]. Note L * pi = 1/T2star'''
         print('\033[33m --- FIT GAS FID ---\033[37m')
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
+            nSkp = self.scanParameters['n_FIDs_to_steady_state']
             FID = self.GASfid
+            t = self.t[nSkp:]
         if t is None: # -- If no time vector is input, it uses the attribute t_svd
-            t = self.t_svd
+            t = self.t
         def gasFitFunction(t, A, f, phi, L, G):
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
             return np.concatenate((x.real,x.imag))
@@ -305,9 +301,11 @@ class FlipCal:
         '''Give it a DP FID, and it will fit to the 3-resonance-decay model and 
         return the fitted 15 parameters in a 3x5 array.'''
         if FID is None: # -- If no FID is input, it uses the SVD DPfid
-            FID = self.DPfid
+            nSkp = self.scanParameters['n_FIDs_to_steady_state']
+            FID = self.DPfid[nSkp:]
+            t = self.t[nSkp:]
         if t is None: # -- If no time vector is input, it uses the attribute t
-            t = self.t_svd
+            t = self.t
         S = np.concatenate((FID.real,FID.imag))
         def FIDfunc_cf(t, a,b,c,d,e,f,g,h,i,j,k,l,m,n,o):
             A = np.array([[a,b,c,d,e],[f,g,h,i,j],[k,l,m,n,o]])
@@ -492,6 +490,7 @@ class FlipCal:
 
     def calcWiggleAmp(self,wiggles): 
         try:
+            wiggles = wiggles - np.mean(wiggles)
             hilb = hilbert(wiggles)
             return 2*np.mean(np.abs(hilb)) # times 2 for Pk-pk
         except:
