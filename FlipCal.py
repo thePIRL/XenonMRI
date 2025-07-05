@@ -259,8 +259,8 @@ class FlipCal:
         '''Fits the SVD gas RO. t [sec], A [arb], phi [radians], f [Hz], L [Hz]. Note L * pi = 1/T2star'''
         print('\033[33m --- FIT GAS FID ---\033[37m')
         if FID is None: # -- If no FID is input, it uses the SVD Gas FID
-            nSkp = self.scanParameters['n_FIDs_to_steady_state']
-            FID = self.GASfid
+            nSkp = self.scanParameters['n_RO_pts_to_skip']
+            FID = self.GASfid[nSkp:]
             t = self.t[nSkp:]
         if t is None: # -- If no time vector is input, it uses the attribute t_svd
             t = self.t
