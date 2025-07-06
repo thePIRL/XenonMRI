@@ -432,9 +432,9 @@ class FlipCal:
             print(f'You gave me data of shape {data.shape}')
         else:
             skp = self.scanParameters['n_RO_pts_to_skip']
-            print(f'Calculating all FId fits for class attribute self.DP of shape {self.DP.shape}. Skipping {skp} RO points in fits..')
+            print(f'Calculating all FID fits for class attribute self.DP of shape {self.DP_lowRank.shape}. Skipping {skp} RO points in fits..')
             internalDataMarker = True
-            data = self.DP[skp:,:]
+            data = self.DP_lowRank[skp:,:]
             t = self.t[skp:]
         goFast = kwargs.get('goFast', True)
         RO_fit_params = np.zeros((3, 5, data.shape[1]))
