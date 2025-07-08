@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import mapvbvd # ---------------------------------- for reading Twix files - __init__()
 import pickle # ----------------------------------- for pickling class attributes - pickleMe() and unpickleMe()
 from scipy.optimize import curve_fit # ------------ for fitting the Gas FID and decay - fit_Gas_FID() and getFlipAngle()
@@ -266,7 +267,7 @@ class FlipCal:
             nSkp = self.scanParameters['n_RO_pts_to_skip']
             FID = self.GASfid[nSkp:]
             t = self.t[nSkp:]
-        if t is None: # -- If no time vector is input, it uses the attribute t_svd
+        if t is None: # -- If no time vector is input, it uses the attribute t
             t = self.t
         def gasFitFunction(t, A, f, phi, L, G):
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
@@ -765,9 +766,9 @@ class FlipCal:
         ax5.set_title('Gas FID')
         T = np.linspace(-0.43e-3,10e-3,1000)
         gasFit = self.FIDFitfunction(T,*self.gas_fit_params)
-        ax5.plot(self.t_svd*1000,self.GASfid.real,c=(0,0.7,0)) # -- Plot the actual Gas FID
-        ax5.plot(self.t_svd*1000,self.GASfid.imag,c=(0.4,0,0.7))
-        ax5.plot(self.t_svd*1000,abs(self.GASfid),c=(0,0,0))
+        ax5.plot(self.t*1000,self.GASfid.real,c=(0,0.7,0)) # -- Plot the actual Gas FID
+        ax5.plot(self.t*1000,self.GASfid.imag,c=(0.4,0,0.7))
+        ax5.plot(self.t*1000,abs(self.GASfid),c=(0,0,0))
         ax5.plot(T*1000,gasFit.real,linestyle='dashed',c=(0,0.7,0)) # -- Now plot the fit (dashed)
         ax5.plot(T*1000,gasFit.imag,linestyle='dashed',c=(0.4,0,0.7))
         ax5.plot(T*1000,abs(gasFit),linestyle='dashed',c=(0,0,0))
@@ -818,8 +819,8 @@ class FlipCal:
         ax8.set_title('DP FID')
         ax8.hlines(y=0,xmin=0,xmax=self.t[-1]*1000,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
         ax8.vlines(x=0,ymin=-0.6,ymax=0.6,linewidth=0.5,color=(0.3,0.3,0.3),linestyle='dashed')
-        ax8.plot(self.t_svd*1000,self.DPfid.real,c=(0,0.7,0))
-        ax8.plot(self.t_svd*1000,self.DPfid.imag,c=(0.4,0,0.7))
+        ax8.plot(self.t*1000,self.DPfid.real,c=(0,0.7,0))
+        ax8.plot(self.t*1000,self.DPfid.imag,c=(0.4,0,0.7))
         #ax8.plot(T*1000,abs(TOT_t),c=(0,0,0),linestyle='dashed')
         ax8.plot(T*1000,TOT_t.real,c=(0,0.7,0),linestyle='dashed',linewidth=0.5)
         ax8.plot(T*1000,TOT_t.imag,c=(0.4,0,0.7),linestyle='dashed',linewidth=0.5)
@@ -905,20 +906,23 @@ class FlipCal:
     
     def draw_wiggles(self,axb):
         try:
+            TR = int(self.scanParameters['TR'])*1e-6
+            nSS = self.scanParameters['n_FIDs_to_steady_state']
+            t = np.arange(len(self.RBC2MEMmag_wiggles))*TR
             axb.set_title('Wiggles')
-            axb.hlines(y=np.arange(0,1,0.1),xmin=np.repeat(0,10),xmax=np.repeat(10,10),color = (0.8,0.8,0.8),linestyle='dashed',linewidth=0.5)
-            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEMsig_wiggles)*1e-6,len(self.RBC2MEMsig_wiggles[100:])), self.RBC2MEMsig_wiggles[100:],color='#0000ff')
-            axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEMmag_wiggles)*1e-6,len(self.RBC2MEMmag_wiggles[100:])), self.RBC2MEMmag_wiggles[100:],color='#ff0000')
-            # axb.plot(np.linspace(100*int(self.scanParameters['TR'])*1e-6,int(self.scanParameters['TR'])*len(self.RBC2MEMdix_wiggles)*1e-6,len(self.RBC2MEMdix_wiggles[100:])), self.RBC2MEMdix_wiggles[100:],color='#00ff00')
+            axb.hlines(y=np.arange(0,1,0.05),xmin=np.repeat(0,20),xmax=np.repeat(10,20),color = (0.8,0.8,0.8),linestyle='dashed',linewidth=0.5)
             axb.set_ylim([0,1])
-            axb.set_xlim([100*int(self.scanParameters['TR'])*1e-6,len(self.RBC2MEMmag_wiggles)*int(self.scanParameters['TR'])*1e-6])
+            axb.set_yticks(np.arange(0.1, 1.1, 0.1))
+            axb.set_xlim([TR*nSS,np.max(t)])
             axb.set_title(f"RBC/MEM vs Time")
-            axb.text(2,0.95,f"RBC/MEM signal = {np.round(np.mean(self.RBC2MEMsig_wiggles[100:]),3)}",fontsize=11,color='#0000ff')
-            axb.text(2,0.90,f"RBC/MEM magnitude = {np.round(np.mean(self.RBC2MEMmag_wiggles[100:]),3)}",fontsize=11,color='#ff0000')
-            # axb.text(2,0.85,f"RBC/MEM dixon = {np.round(np.mean(self.RBC2MEMdix_wiggles[100:]),3)}",fontsize=11,color='#00ff00')
-            # axb.text(2,0.80,f"RBC/MEM amp = {np.round(self.RBC2MEMmag_amp,3)} = {np.round(200*self.RBC2MEMmag_amp/self.RBC2MEMmag,2)} %",fontsize=12)
+            axb.add_patch(Rectangle((0,self.RBC2MEMmag-self.RBC2MEMmag_amp/2),10,self.RBC2MEMmag_amp,facecolor = '#ccccff'))
+            axb.plot(0,self.RBC2MEMmag,10,self.RBC2MEMmag,color='#777777',linestyle='dashed')
+            #axb.text(2,0.95,f"RBC/MEM signal = {np.round(np.mean(self.RBC2MEMsig_wiggles[100:]),3)}",fontsize=11,color='#0000ff')
+            axb.text(2,0.90,f"RBC/MEM = {np.round(np.mean(self.RBC2MEMmag_wiggles[100:]),3)}",fontsize=11,color='#ff0000')
+            axb.text(2,0.80,f"RBC/MEM amp = {np.round(self.RBC2MEMmag_amp,3)} = {np.round(self.RBC2MEMmag_amp/self.RBC2MEMmag,2)} %",fontsize=12)
+            axb.plot(t, self.RBC2MEMmag_wiggles,color='#ff0000')
         except:
-            print(f"No Wiggles to print")
+            print(f"No Wiggles to print, or wiggles failed to print")
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
     
     def printout(self,save_path = None):
