@@ -267,7 +267,7 @@ class FlipCal:
             nSkp = self.scanParameters['n_RO_pts_to_skip']
             FID = self.GASfid[nSkp:]
             t = self.t[nSkp:]
-        if t is None: # -- If no time vector is input, it uses the attribute t
+        if t is None: # -- If t is not declared is uses the attribute self.t vector
             t = self.t
         def gasFitFunction(t, A, f, phi, L, G):
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
@@ -275,7 +275,7 @@ class FlipCal:
         data = np.concatenate((FID.real,FID.imag))
         gas_fit_params, _ = curve_fit(gasFitFunction, t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
         gas_fit_params[2] = ((gas_fit_params[2] + 180) % 360) - 180
-        if gas_fit_params[0] < 0:
+        if gas_fit_params[0] < 0: # - Amplitude can be negative if phase is 180° off - this fixes that.
             gas_fit_params[0] = -gas_fit_params[0]
             gas_fit_params[2] = (gas_fit_params[2]<=0)*(gas_fit_params[2] + 180) + (gas_fit_params[2]>0)*(gas_fit_params[2] - 180)
         newGasFrequency = self.scanParameters['GasFrequency'] + gas_fit_params[1]
