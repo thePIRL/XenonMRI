@@ -115,8 +115,8 @@ class FlipCal:
         self.DP = '' # ------------------ Dissolved phase FIDs (columns 1:499) 
         self.GAS = '' # ----------------- Gas FIDs (columns 500:519) 
         self.DPfid = '' # --------------- First U column in DP SVD (best representation of a single DP fid)
-        self.DPdecay = '' # ------------- First V column in DP SVD (captures decay due to depolarization)
-        self.RBCosc = '' # -------------- Second V column in Dp SVD (mostly captures wiggles)
+        #self.DPdecay = '' # ------------- First V column in DP SVD (captures decay due to depolarization)
+        #self.RBCosc = '' # -------------- Second V column in Dp SVD (mostly captures wiggles)
         self.GASfid = '' # -------------- First U column in GAS SVD (best representation of single GAS fid)
         self.gasDecay = '' # ------------ First V column in GAS SVD (captures decay due to depolarization)
         # -- Attributes Created in fit_GAS_FID()
@@ -247,10 +247,9 @@ class FlipCal:
         ## -- DP -- First we create the low-rank approximation of DP
         [U,S,VT] = np.linalg.svd(self.DP)
         self.DP_lowRank = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
+        ## -- DPfid -- Here we SVD all FIDs once steady state is reached. The 'best' FID is constructed from the first 2 modes.
         [U,S,VT] = np.linalg.svd(self.DP[:,n_skp:])
-        self.DPfid = flipCheck(U[:,0]*S[0]*np.mean(VT[0,:]) + U[:,1]*S[1]*np.mean(VT[1,:]),self.DP[:,100]) # --------------- First 2 FID modes represent the best approximation FID of the data
-        # self.DPdecay = VT[0,:]*S[0] # --------------------------------------- The DP signal decay across readouts
-        # self.RBCosc = VT[1,:]*S[1] # ---------------------------------------- The RBC oscillations
+        self.DPfid = flipCheck(U[:,0]*S[0]*np.mean(VT[0,:]) + U[:,1]*S[1]*np.mean(VT[1,:]),self.DP[:,100]) # -- First 2 FID modes represent the best approximation FID of the data
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS)
         self.GASfid = flipCheck(U[:,0]*S[0],self.GAS[:,0]) # ------------ The best representation of a single Gas readout
@@ -1511,6 +1510,3 @@ if __name__ == "__main__":
             text = sg.popup_get_text('Enter DE [mL]: ',default_text=FA.patientInfo['DE'])
             window['DE'].update(f'DE: {text}')
             FA.patientInfo['scanDate'] = text
-
-
-#FA.exportDICOM(dummy_dicom_path=os.path.normpath(r"\\umh.edu\data\Radiology\Xenon_Studies\Studies\General_Xenon\Gen_Xenon_Studies\Xe-0093 - 250411 - healthy_exercise\DICOM\25041120\11260000\52699188"))
