@@ -25,8 +25,8 @@ def find_my_data(parent_dir):
     xenon_pre_folder = os.path.join(parent_dir,"xenon_pre/DICOM/EXP00000/")
     xenon_pos_folder = os.path.join(parent_dir,"xenon_post/DICOM/EXP00000/")
     proton_pre_folder = os.path.join(parent_dir,"proton_pre/DICOM/EXP00000/")
-    if os.path.isdir(os.path.join(parent_dir,"proton_pre/DICOM/EXP00000/")):
-        proton_pos_folder = os.path.join(parent_dir,"proton_pre/DICOM/EXP00000/")
+    if os.path.isdir(os.path.join(parent_dir,"proton_post/DICOM/EXP00000/")):
+        proton_pos_folder = os.path.join(parent_dir,"proton_post/DICOM/EXP00000/")
     else:
         proton_pos_folder = proton_pre_folder
     calibration_twix_path = glob.glob(os.path.join(parent_dir,'*_dyn.dat'))[0]
@@ -80,7 +80,7 @@ def PACS_runner(parent_dir,
     ## -- Analyze the FlipCal -- ##
     print(f"\033[33mDummy Dicom Paths Pre: {dicom_pre_template_path}, Post: {dicom_pos_template_path}.\033[37m")
     FA = FlipCal.FlipCal(twix_path = calibration_twix_path)
-    FA.process(wiggles=False)
+    FA.process()
     FA.completeExport(parent_dir=parent_dir,dummy_dicom_path=os.path.join(xenon_pre_folder,os.listdir(xenon_pre_folder)[0]))
     # FA.dicomPrintout(dummy_dicom_path = dicom_pre_template_path,save_path = os.path.join(PACS_dir,'FlipCal'))
     print(f"\033[33mFlipCal processed successfully.\033[37m")
