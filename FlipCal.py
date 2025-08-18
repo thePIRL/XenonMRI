@@ -503,7 +503,7 @@ class FlipCal:
 
     def adjust_DP_params(self):
         '''If the DP fit isn't perfect, this will allow the user to adjust parameters for a better fit'''
-        import PySimpleGUI as sg
+        import FreeSimpleGUI as sg
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         import matplotlib.pyplot as plt
 
@@ -1315,7 +1315,7 @@ if __name__ == "__main__":
     version = '250128_calibrationGUI'
     image_box_size = 50
     ARCHIVE_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/Archive/'
-    import PySimpleGUI as sg
+    import FreeSimpleGUI as sg
     from datetime import date # -- So we can export the analysis date
     from PIL import Image, ImageTk, ImageDraw, ImageFont # ---------- for arrayToImage conversion
     def arrayToImage(A,size):

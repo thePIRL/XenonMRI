@@ -819,7 +819,7 @@ if __name__ == "__main__":
     image_box_size = 40
     ARCHIVE_path = '//umh.edu/data/Radiology/Xenon_Studies/Studies/Archive/'
     
-    import PySimpleGUI as sg
+    import FreeSimpleGUI as sg
     from datetime import date # -- So we can export the analysis date
 
     ## -- Helper Functions for GUI -- ##

@@ -169,7 +169,7 @@ def find_file_paths(directory: str, filenames: tuple) -> dict:
 
 
 if __name__ == '__main__':
-    import PySimpleGUI as sg
+    import FreeSimpleGUI as sg
     layout = [
         [sg.Text('Path to Niftis and Numpys:'), sg.Input(key='path_to_data', default_text="", size=(800, 1))],
         [sg.Button('Find my file Paths', key='find_file_paths')],

@@ -189,7 +189,7 @@ def find_file_paths(directory: str, filenames: tuple) -> dict:
 
 
 if __name__ == '__main__':
-    import PySimpleGUI as sg
+    import FreeSimpleGUI as sg
     layout = [
         [sg.Text('Pre  - RAW     :'), sg.Input(key='rawpre', default_text="C:/tmp/Analysis/pre_xenon/DICOM/EXP00000/", size=(800, 1))],
         [sg.Text('Post - RAW     :'), sg.Input(key='rawpos', default_text="C:/tmp/Analysis/post_xenon/DICOM/EXP00000/", size=(800, 1))],

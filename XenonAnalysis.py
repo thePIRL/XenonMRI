@@ -175,7 +175,7 @@ def PACS_runner(parent_dir,
 
 ## -- GUI -- ##
 if __name__ == '__main__':
-    import PySimpleGUI as sg
+    import FreeSimpleGUI as sg
     layout = [
         [sg.Text('Parent Directory:'), sg.Input(key='parent_dir', default_text="c:/tmp/", size=(800, 1))],
         [sg.Button('Populate Fields', key='populate')],

@@ -108,7 +108,7 @@ def convert_pdf_to_dicom(pdf_path, output_folder, dicom_template_path, series_de
 
 
 if __name__ == '__main__':
-    import PySimpleGUI as sg
+    import FreeSimpleGUI as sg
     layout = [
         [sg.Text('Input PDF:'), sg.Input(key='input_pdf', default_text="", size=(800, 1))],
         [sg.Text('Output Directory (will create if needed):'), sg.Input(key='output_directory', size=(800, 1))],
