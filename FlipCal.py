@@ -111,6 +111,7 @@ class FlipCal:
         
         # -- Created Attributes in SVD() -- ##
         self.singular_values_to_keep = 3
+        self.FID = None
         self.noise = '' # --------------- Single noise FID (column 0 of FID) 
         self.DP = '' # ------------------ Dissolved phase FIDs (columns 1:499) 
         self.GAS = '' # ----------------- Gas FIDs (columns 500:519) 
@@ -168,7 +169,7 @@ class FlipCal:
         if ismrmrd_path is not None:
             self.parseISMRMRD(ismrmrd_path=ismrmrd_path)
         ## -- If after all that, we still have an empty FID, initialize the object, but remind the user to populate attributes manually
-        if self.FID == '':
+        if self.FID is None:
             print(f"\n \033[33m # ------ Empty FlipCal object initialized. Please populate self.FID and self.t attributes to process ------ #\033[37m")
             self.FID = np.zeros((512,520))
             self.scanParameters = {'dwellTime': 1.953125e-05, 'GasFrequency':34081625, 'dissolvedFrequencyOffset':7090, 'PulseDuration': 670,'n_RO_pts_to_skip':0}
@@ -252,7 +253,7 @@ class FlipCal:
         self.DPfid = flipCheck(U[:,0]*S[0]*np.mean(VT[0,:]) + U[:,1]*S[1]*np.mean(VT[1,:]),self.DP[:,100]) # -- First 2 FID modes represent the best approximation FID of the data
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS)
-        self.GASfid = flipCheck(U[:,0]*S[0],self.GAS[:,0]) # ------------ The best representation of a single Gas readout
+        self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
         self.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
     
     def FIDFitfunction(self, t, A, f, phi, L, G):
