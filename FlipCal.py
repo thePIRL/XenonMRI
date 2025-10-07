@@ -1254,41 +1254,61 @@ class FlipCal:
         return twix_header
     
     def __repr__(self):
-        string = (f'\033[35mFlipCal\033[37m class object version \033[94m{self.version}\033[37m\n')
+        def is_empty_str(x):
+            return isinstance(x, str) and x == ''
+        s = f'\033[35mFlipCal\033[37m class object version \033[94m{self.version}\033[37m\n'
         for attr, value in vars(self).items():
-            if value == '':
-                string += (f'\033[31m {attr}: \033[37m\n')
+            if is_empty_str(value):
+                s += f'\033[31m {attr}: \033[37m\n'
             elif attr == 'calibration_dict':
-                string += (f'\033[32m {attr}: \033[33mexists\033[37m\n')
+                s += f'\033[32m {attr}: \033[33mexists\033[37m\n'
             elif attr == 'gas_fit_params':
-                string += "\033[32mgas_fit_params\033[36m  Frequency -- Area -- Phase -- FWHML -- FWHMG\033[37m \n"
-                string += f"                \033[37m {np.round(self.gas_fit_params[1])} -- {np.round(self.gas_fit_params[0],3)} -- {np.round(self.gas_fit_params[2])} -- {np.round(self.gas_fit_params[3])} -- {np.round(self.gas_fit_params[4])}\n"
+                s += "\033[32mgas_fit_params\033[36m  Frequency -- Area -- Phase -- FWHML -- FWHMG\033[37m \n"
+                s += (f"                \033[37m {np.round(self.gas_fit_params[1])} -- "
+                    f"{np.round(self.gas_fit_params[0], 3)} -- "
+                    f"{np.round(self.gas_fit_params[2])} -- "
+                    f"{np.round(self.gas_fit_params[3])} -- "
+                    f"{np.round(self.gas_fit_params[4])}\n")
             elif attr == 'DP_fit_params':
-                string += "\033[32mDP_fit_params\033[36m     Frequency -- Area -- Phase -- FWHML -- FWHMG\033[37m \n"
-                string += f"            \033[36mRBC:\033[37m {np.round(self.DP_fit_params[0,1])} -- {np.round(self.DP_fit_params[0,0]/self.DP_fit_params[1,0],3)} -- {np.round(self.DP_fit_params[0,2])} -- {np.round(self.DP_fit_params[0,3])} -- {np.round(self.DP_fit_params[0,4])}\n"
-                string += f"            \033[36mMEM:\033[37m {np.round(self.DP_fit_params[1,1])} -- {np.round(self.DP_fit_params[1,0]/self.DP_fit_params[1,0],3)} -- {np.round(self.DP_fit_params[1,2])} -- {np.round(self.DP_fit_params[1,3])} -- {np.round(self.DP_fit_params[1,4])}\n"
-                string += f"            \033[36mGAS:\033[37m {np.round(self.DP_fit_params[2,1])} -- {np.round(self.DP_fit_params[2,0]/self.DP_fit_params[1,0],3)} -- {np.round(self.DP_fit_params[2,2])} -- {np.round(self.DP_fit_params[2,3])} -- {np.round(self.DP_fit_params[2,4])}\n"
-            elif type(value) is np.ndarray:
-                string += (f'\033[32m {attr}: \033[36m{value.shape} \033[37m\n')
-            elif attr == 'scanParameters':
-                string += '\033[35mscanParameters\033[37m \n'
+                s += "\033[32mDP_fit_params\033[36m     Frequency -- Area -- Phase -- FWHML -- FWHMG\033[37m \n"
+                s += (f"            \033[36mRBC:\033[37m {np.round(self.DP_fit_params[0,1])} -- "
+                    f"{np.round(self.DP_fit_params[0,0]/self.DP_fit_params[1,0], 3)} -- "
+                    f"{np.round(self.DP_fit_params[0,2])} -- "
+                    f"{np.round(self.DP_fit_params[0,3])} -- "
+                    f"{np.round(self.DP_fit_params[0,4])}\n")
+                s += (f"            \033[36mMEM:\033[37m {np.round(self.DP_fit_params[1,1])} -- "
+                    f"{np.round(self.DP_fit_params[1,0]/self.DP_fit_params[1,0], 3)} -- "
+                    f"{np.round(self.DP_fit_params[1,2])} -- "
+                    f"{np.round(self.DP_fit_params[1,3])} -- "
+                    f"{np.round(self.DP_fit_params[1,4])}\n")
+                s += (f"            \033[36mGAS:\033[37m {np.round(self.DP_fit_params[2,1])} -- "
+                    f"{np.round(self.DP_fit_params[2,0]/self.DP_fit_params[1,0], 3)} -- "
+                    f"{np.round(self.DP_fit_params[2,2])} -- "
+                    f"{np.round(self.DP_fit_params[2,3])} -- "
+                    f"{np.round(self.DP_fit_params[2,4])}\n")
+            elif isinstance(value, np.ndarray):
+                s += f'\033[32m {attr}: \033[36m{value.shape} \033[37m\n'
+
+            elif attr == 'scanParameters' and isinstance(value, dict):
+                s += '\033[35mscanParameters\033[37m \n'
                 for attr2, value2 in value.items():
-                    if value2 == '':
-                        string += (f'   \033[31m {attr2}: \033[37m\n')
+                    if is_empty_str(value2):
+                        s += f'   \033[31m {attr2}: \033[37m\n'
                     else:
-                        string += (f'   \033[32m {attr2}: \033[36m{value2} \033[37m\n')
-            elif attr == 'patientInfo':
-                string += '\033[35mpatientInfo\033[37m \n'
+                        s += f'   \033[32m {attr2}: \033[36m{value2} \033[37m\n'
+            elif attr == 'patientInfo' and isinstance(value, dict):
+                s += '\033[35mpatientInfo\033[37m \n'
                 for attr2, value2 in value.items():
-                    if value2 == '':
-                        string += (f'   \033[31m {attr2}: \033[37m\n')
+                    if is_empty_str(value2):
+                        s += f'   \033[31m {attr2}: \033[37m\n'
                     else:
-                        string += (f'   \033[32m {attr2}: \033[36m{value2} \033[37m\n')
-            elif type(value) is dict:
-                string += (f'\033[35m{attr} also found\033[37m \n')
+                        s += f'   \033[32m {attr2}: \033[36m{value2} \033[37m\n'
+            elif isinstance(value, dict):
+                s += f'\033[35m{attr} also found\033[37m \n'
             else:
-                string += (f'\033[32m {attr}: \033[36m{value} \033[37m\n')
-        return string
+                s += f'\033[32m {attr}: \033[36m{value} \033[37m\n'
+        return s
+
 
 
 @contextmanager
