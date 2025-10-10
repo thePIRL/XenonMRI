@@ -110,7 +110,7 @@ class FlipCal:
                          'n_RO_pts_to_skip': 3}
         
         # -- Created Attributes in SVD() -- ##
-        self.singular_values_to_keep = 3
+        self.singular_values_to_keep = 4
         self.FID = None
         self.noise = '' # --------------- Single noise FID (column 0 of FID) 
         self.DP = '' # ------------------ Dissolved phase FIDs (columns 1:499) 
