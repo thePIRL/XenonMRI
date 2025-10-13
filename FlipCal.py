@@ -239,7 +239,7 @@ class FlipCal:
             n_noise_FIDs = 1
             n_DP_FIDs = 499
             n_GAS_FIDs = 20
-            n_SVDs = 3
+            n_SVDs = 4
             n_skp = 100
         ## -- First we separate the the columns of the FID matrix into the 3 separate matrices for analysis
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
@@ -253,7 +253,7 @@ class FlipCal:
         self.DPfid = flipCheck(U[:,0]*S[0]*np.mean(VT[0,:]) + U[:,1]*S[1]*np.mean(VT[1,:]),self.DP[:,100]) # -- First 2 FID modes represent the best approximation FID of the data
         ## -- GAS -- Attributes are created for first U column (single RO), and first V column (gas signal decay) ## 
         [U,S,VT] = np.linalg.svd(self.GAS)
-        self.GASfid = flipCheck(U[:,0]*S[0]**2,self.GAS[:,0]) # ------------ The best representation of a single Gas readout
+        self.GASfid = flipCheck(U[:,0]*S[0]*np.mean(VT[0,0]),self.GAS[:,0]) # ------------ The best representation of a single Gas readout
         self.gasDecay = np.abs(VT[0,:]*S[0]) # - The gas signal decay across readouts
     
     def FIDFitfunction(self, t, A, f, phi, L, G):
@@ -273,6 +273,8 @@ class FlipCal:
             x = A * np.exp(1j*phi * np.pi/180) * np.exp(1j * f * 2 * np.pi * t) * np.exp(-t * np.pi * L) * np.exp(-t**2 * 4* np.log(2) * G**2)
             return np.concatenate((x.real,x.imag))
         data = np.concatenate((FID.real,FID.imag))
+        print(f'RPT: t.shape = {t.shape}')
+        print(f'RPT: data.shape = {data.shape}')
         gas_fit_params, _ = curve_fit(gasFitFunction, t, data, p0=[np.max(np.abs(FID)), 0, 0, 10, 40])
         gas_fit_params[2] = ((gas_fit_params[2] + 180) % 360) - 180
         if gas_fit_params[0] < 0: # - Amplitude can be negative if phase is 180° off - this fixes that.
