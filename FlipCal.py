@@ -244,7 +244,7 @@ class FlipCal:
         ## -- First we separate the the columns of the FID matrix into the 3 separate matrices for analysis
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
         self.DP = self.FID[:,n_noise_FIDs:(n_noise_FIDs + n_DP_FIDs)] # ------------------------------ DP FIDs
-        self.GAS = self.FID[:,(n_noise_FIDs + n_DP_FIDs):(n_noise_FIDs + n_DP_FIDs + n_GAS_FIDs)] # -- GAS FIDs
+        self.GAS = self.FID[:,(self.FID.shape[1] - n_GAS_FIDs):] # -- GAS FIDs
         ## -- DP -- First we create the low-rank approximation of DP
         [U,S,VT] = np.linalg.svd(self.DP)
         self.DP_lowRank = U[:,:n_SVDs] @ np.diag(S[:n_SVDs])  @ VT[:n_SVDs,:]
