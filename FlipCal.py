@@ -706,7 +706,9 @@ class FlipCal:
         ismrmrd_object = ismrmrd.Dataset(ismrmrd_path,'/dataset',create_if_needed=False) # gets IRMRMRD object
         print('Pulling ISMRMRD Header...')
         header_str = ismrmrd_object.read_xml_header().decode('utf-8') #convert ismrmrd object header to xml then to bytestring
+        print(f'Header read into {header_str}')
         root = ET.fromstring(header_str)
+        print(f'root into {root}')
         def parse_ismrmrd_header(root):
             def xml_to_dict(elem):
                 if len(elem) == 0:  # No children
@@ -1152,62 +1154,62 @@ class FlipCal:
         np.savez(path, **array_dict)
     
     def exportISMRMRD(self,path='c:/pirl/data/ISMRMRD.h5'):
-            '''Consortium-Required Parameters: https://github.com/Xe-MRI-CTC/siemens-to-mrd-converter'''
-            if os.path.exists(path):
-                os.remove(path)
-            ismrmrd_header = ismrmrd.xsd.ismrmrdHeader()
-            ismrmrd_header.studyInformation = ismrmrd_header.studyInformation or ismrmrd.xsd.studyInformationType()
-            ismrmrd_header.subjectInformation = ismrmrd_header.subjectInformation or ismrmrd.xsd.subjectInformationType()
-            ismrmrd_header.acquisitionSystemInformation = ismrmrd_header.acquisitionSystemInformation or ismrmrd.xsd.acquisitionSystemInformationType()
-            ismrmrd_header.sequenceParameters = ismrmrd_header.sequenceParameters or ismrmrd.xsd.sequenceParametersType()
-            ismrmrd_header.studyInformation.studyDate = self.scanParameters['scanDate'] #scan_date
-            ismrmrd_header.subjectInformation.patientID = self.patientInfo['PatientName']#subject_id
-            ismrmrd_header.acquisitionSystemInformation.systemVendor = self.scanParameters['systemVendor']#system_vendor
-            ismrmrd_header.acquisitionSystemInformation.institutionName = self.scanParameters['institutionName']
-            ismrmrd_header.acquisitionSystemInformation.systemFieldStrength_T = self.scanParameters['B0fieldStrength']
-            ismrmrd_header.sequenceParameters.TE = self.scanParameters['TE']
-            ismrmrd_header.sequenceParameters.TR = self.scanParameters['TR']
-            ismrmrd_header.sequenceParameters.flipAngle_deg = self.scanParameters['FlipAngle']
-            # -- user defined attributes here (non-native ISMRMRD header stuffs that xenon people like)
-            # -- for Calibration this includes Gas frequency and DP offset frequency
-            ismrmrd_header.userParameters = ismrmrd_header.userParameters or ismrmrd.xsd.userParametersType()
-            # if not hasattr(ismrmrd_header.userParameters, 'userParameterLong'):
-            #     ismrmrd_header.userParameters.userParameterLong = []
-            ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_center_frequency",self.scanParameters['GasFrequency']))
-            ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_dissolved_offset_frequency",self.scanParameters['dissolvedFrequencyOffset']))
-            if not hasattr(ismrmrd_header.encoding, "trajectoryDescription"):
-                ismrmrd_header.encoding = ismrmrd.xsd.encodingType()
-            if type(ismrmrd_header.encoding.reconSpace) == type(None):
-                ismrmrd_header.encoding.reconSpace = ismrmrd.xsd.encodingSpaceType()
-            fov_obj = ismrmrd.xsd.fieldOfViewMm()
-            fov_obj.x = self.scanParameters['FOV']
-            fov_obj.y = self.scanParameters['FOV']
-            fov_obj.z = self.scanParameters['FOV']
-            ismrmrd_header.encoding.reconSpace.fieldOfView_mm = fov_obj
-            # -- write the actual FID data one FID at a time
-            ismrmrd_data_set = ismrmrd.Dataset(path, "/dataset", create_if_needed=True)
-            for acquisition_num in range(self.FID.shape[1]):
-                acquisition = ismrmrd.Acquisition()
-                acquisition_header = ismrmrd.AcquisitionHeader()
-                acquisition_header.number_of_samples = self.FID.shape[0]
-                acquisition_header.active_channels = 1
-                acquisition_header.trajectory_dimensions = 3
-                acquisition_header.sample_time_us = self.scanParameters['dwellTime']*1e6
-                acquisition_header.idx.contrast = int(2*(acquisition_num<500) + 1*(acquisition_num>=500))
-                acquisition_header.measurement_uid = int(0) #Bonus Spectra (not in calibration)
-                acquisition.resize(512)
-                acquisition.version = 1
-                acquisition.available_channels = 1
-                acquisition.center_sample = 0
-                acquisition.read_dir[0] = 1.0
-                acquisition.phase_dir[1] = 1.0
-                acquisition.slice_dir[2] = 1.0
-                acquisition.setHead(acquisition_header)
-                acquisition.data[:] = self.FID[:,acquisition_num]
-                ismrmrd_data_set.append_acquisition(acquisition)
-            ismrmrd_data_set.write_xml_header(ismrmrd.xsd.ToXML(ismrmrd_header))
-            ismrmrd_data_set.close()
-            print(f'ISMRMRD h5 file written to {path}')
+        '''Consortium-Required Parameters: https://github.com/Xe-MRI-CTC/siemens-to-mrd-converter'''
+        if os.path.exists(path):
+            os.remove(path)
+        ismrmrd_header = ismrmrd.xsd.ismrmrdHeader()
+        ismrmrd_header.studyInformation = ismrmrd_header.studyInformation or ismrmrd.xsd.studyInformationType()
+        ismrmrd_header.subjectInformation = ismrmrd_header.subjectInformation or ismrmrd.xsd.subjectInformationType()
+        ismrmrd_header.acquisitionSystemInformation = ismrmrd_header.acquisitionSystemInformation or ismrmrd.xsd.acquisitionSystemInformationType()
+        ismrmrd_header.sequenceParameters = ismrmrd_header.sequenceParameters or ismrmrd.xsd.sequenceParametersType()
+        ismrmrd_header.studyInformation.studyDate = self.scanParameters['scanDate'] #scan_date
+        ismrmrd_header.subjectInformation.patientID = self.patientInfo['PatientName']#subject_id
+        ismrmrd_header.acquisitionSystemInformation.systemVendor = self.scanParameters['systemVendor']#system_vendor
+        ismrmrd_header.acquisitionSystemInformation.institutionName = self.scanParameters['institutionName']
+        ismrmrd_header.acquisitionSystemInformation.systemFieldStrength_T = self.scanParameters['B0fieldStrength']
+        ismrmrd_header.sequenceParameters.TE = self.scanParameters['TE']
+        ismrmrd_header.sequenceParameters.TR = self.scanParameters['TR']
+        ismrmrd_header.sequenceParameters.flipAngle_deg = self.scanParameters['FlipAngle']
+        # -- user defined attributes here (non-native ISMRMRD header stuffs that xenon people like)
+        # -- for Calibration this includes Gas frequency and DP offset frequency
+        ismrmrd_header.userParameters = ismrmrd_header.userParameters or ismrmrd.xsd.userParametersType()
+        # if not hasattr(ismrmrd_header.userParameters, 'userParameterLong'):
+        #     ismrmrd_header.userParameters.userParameterLong = []
+        ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_center_frequency",self.scanParameters['GasFrequency']))
+        ismrmrd_header.userParameters.userParameterLong.append(ismrmrd.xsd.userParameterLongType("xe_dissolved_offset_frequency",self.scanParameters['dissolvedFrequencyOffset']))
+        if not hasattr(ismrmrd_header.encoding, "trajectoryDescription"):
+            ismrmrd_header.encoding = ismrmrd.xsd.encodingType()
+        if type(ismrmrd_header.encoding.reconSpace) == type(None):
+            ismrmrd_header.encoding.reconSpace = ismrmrd.xsd.encodingSpaceType()
+        fov_obj = ismrmrd.xsd.fieldOfViewMm()
+        fov_obj.x = self.scanParameters['FOV']
+        fov_obj.y = self.scanParameters['FOV']
+        fov_obj.z = self.scanParameters['FOV']
+        ismrmrd_header.encoding.reconSpace.fieldOfView_mm = fov_obj
+        # -- write the actual FID data one FID at a time
+        ismrmrd_data_set = ismrmrd.Dataset(path, "/dataset", create_if_needed=True)
+        for acquisition_num in range(self.FID.shape[1]):
+            acquisition = ismrmrd.Acquisition()
+            acquisition_header = ismrmrd.AcquisitionHeader()
+            acquisition_header.number_of_samples = self.FID.shape[0]
+            acquisition_header.active_channels = 1
+            acquisition_header.trajectory_dimensions = 3
+            acquisition_header.sample_time_us = self.scanParameters['dwellTime']*1e6
+            acquisition_header.idx.contrast = int(2*(acquisition_num<500) + 1*(acquisition_num>=500))
+            acquisition_header.measurement_uid = int(0) #Bonus Spectra (not in calibration)
+            acquisition.resize(512)
+            acquisition.version = 1
+            acquisition.available_channels = 1
+            acquisition.center_sample = 0
+            acquisition.read_dir[0] = 1.0
+            acquisition.phase_dir[1] = 1.0
+            acquisition.slice_dir[2] = 1.0
+            acquisition.setHead(acquisition_header)
+            acquisition.data[:] = self.FID[:,acquisition_num]
+            ismrmrd_data_set.append_acquisition(acquisition)
+        ismrmrd_data_set.write_xml_header(ismrmrd.xsd.ToXML(ismrmrd_header))
+        ismrmrd_data_set.close()
+        print(f'ISMRMRD h5 file written to {path}')
 
     def completeExport(self, parent_dir='c:/tmp/',dummy_dicom_path=None):
         '''Saves the pickle, printout, numpy, and DICOM (need ISMRMRD next)'''
@@ -1252,7 +1254,7 @@ class FlipCal:
     def twix_header_to_json(self,output_path='c:/tmp/TWIXheader.json'):
         twix_header = self.twix.hdr
         with open(output_path, 'w') as fp:
-            json.dump(extract_attributes(twix_header), fp,indent=2)
+            json.dump(self.extract_attributes(twix_header), fp,indent=2)
         return twix_header
     
     def __repr__(self):
@@ -1310,7 +1312,6 @@ class FlipCal:
             else:
                 s += f'\033[32m {attr}: \033[36m{value} \033[37m\n'
         return s
-
 
 
 @contextmanager
