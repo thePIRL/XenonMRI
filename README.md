@@ -9,7 +9,7 @@ This is code used by the University of Missouri PIRL (Pulmonary Imaging Research
 - Afia Shammi
 
 ## Overview of FlipCal
-This class will analyze data acquired from the spectroscopic calibration sequence (yes, I still call it a FlipCal, short for Flip Angle Calibration, even though it does more than just calculate flip angles). It can input Twix files (Siemens raw data), MatLab files (MatLab workspace after processing data by Scott Robertson's code from the Duke pipeline), ISMRMRD files, or a previously processed FlipCal saved as a `pickle' in python. We're in the process of publishing its routine, but you can probably figure out what it's doing pretty easliy by, you know, reading the code.
+This class will analyze data acquired from the spectroscopic calibration sequence (yes, I still call it a FlipCal, short for Flip Angle Calibration, even though it does more than just calculate flip angles). It can input Twix files (Siemens raw data), MatLab files (MatLab workspace after processing data by Scott Robertson's code from the Duke pipeline), ISMRMRD files, or a previously processed FlipCal saved as a `pickle' in python. The priciples of its operation were published in [Garcia Delgado *et al.* 2026 Magn Reson Med](https://onlinelibrary.wiley.com/doi/epdf/10.1002/mrm.70246); and here's a short video explaining how the SVD is utilized (https://youtu.be/YqjAIh5BY9o).
 ![alt text](CalGUI.png)
 
 ## Overview of Vent_analysis
