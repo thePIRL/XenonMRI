@@ -1017,7 +1017,9 @@ class FlipCal:
     def exportDICOM(self,dummy_dicom_path = None,save_path = 'c:/pirl/data/'):
         '''Creates a 3D DICOM file (enhanced) where each image is a matplotlib pyplot.
         For each plot we want to dicomize, we create a plot then convert to numpy array.
-        Then each array is stacked and a DICOM file is created (need to try this on PACS)'''
+        Then each array is stacked and a DICOM file is created (need to try this on PACS).
+        In matplotlib 3.10.6 the figures are cast to numpys using a Canvas renderer, but 
+        legacy code remains commented out for each figure'''
         if dummy_dicom_path is None:
             print("Argument 'dummy_dicom_path' is not specified for exportDICOM(), aborting DICOM printout")
             return
@@ -1026,43 +1028,61 @@ class FlipCal:
         fig, axa = plt.subplots(figsize = fig_size)
         self.draw_GAS_decay(axa)
         fig.canvas.draw()
-        GAS_Decay_Fit = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        GAS_Decay_Fit = GAS_Decay_Fit.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # GAS_Decay_Fit = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # GAS_Decay_Fit = GAS_Decay_Fit.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        GAS_Decay_Fit = rgba[..., :3].copy()
         plt.close(fig)
         # -- 2 -GAS FID -- #
         fig, ax5 = plt.subplots(figsize = fig_size)
         self.draw_GAS_FID(ax5)
         fig.canvas.draw()
-        GAS_FID_fig = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        GAS_FID_fig = GAS_FID_fig.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # GAS_FID_fig = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # GAS_FID_fig = GAS_FID_fig.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        GAS_FID_fig = rgba[..., :3].copy()
         plt.close(fig)
         # -- 3 -GAS SPECTRUM -- #
         fig, ax5 = plt.subplots(figsize = fig_size)
         self.draw_GAS_spectrum(ax5)
         fig.canvas.draw()
-        GAS_SPECTRUM_fig = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        GAS_SPECTRUM_fig = GAS_SPECTRUM_fig.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # GAS_SPECTRUM_fig = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # GAS_SPECTRUM_fig = GAS_SPECTRUM_fig.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        GAS_SPECTRUM_fig = rgba[..., :3].copy()        
         plt.close(fig)
         # -- 4 -DP FID Fit -- #
         fig, axe = plt.subplots(figsize = fig_size)
         self.draw_DP_FID(axe)
         fig.canvas.draw()
-        DP_FID = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        DP_FID = DP_FID.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # DP_FID = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # DP_FID = DP_FID.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        DP_FID = rgba[..., :3].copy()          
         plt.close(fig)
         # -- 5 -DP FID Fit -- #
         fig, axe = plt.subplots(figsize = fig_size)
         self.draw_DP_FID_Fit(axe)
         fig.canvas.draw()
-        DP_FID_FIT = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        DP_FID_FIT = DP_FID_FIT.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # DP_FID_FIT = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # DP_FID_FIT = DP_FID_FIT.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        DP_FID_FIT = rgba[..., :3].copy()          
         plt.close(fig)
         # -- 6 -DP Spectra Fit-- #
         fig, axe = plt.subplots(figsize = fig_size)
         self.draw_DP_spectra_fit(axe)
         fig.canvas.draw()
-        DP_SPECTRA_FIT = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        DP_SPECTRA_FIT = DP_SPECTRA_FIT.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # DP_SPECTRA_FIT = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # DP_SPECTRA_FIT = DP_SPECTRA_FIT.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        DP_SPECTRA_FIT = rgba[..., :3].copy()          
         plt.close(fig)
         # - 7 -Wiggles - #
         fig, axb = plt.subplots(figsize = fig_size)
@@ -1071,8 +1091,11 @@ class FlipCal:
         except:
             axb.text(0.5,0.5,f"Wiggles not processed",fontsize=12)
         fig.canvas.draw()
-        WIGGLES = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        WIGGLES = WIGGLES.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # WIGGLES = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        # WIGGLES = WIGGLES.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        renderer = fig.canvas.get_renderer()
+        rgba = np.asarray(renderer.buffer_rgba())
+        WIGGLES = rgba[..., :3].copy()          
         plt.close(fig)
         # -- Build Array -- ##
         try:

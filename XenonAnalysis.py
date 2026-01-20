@@ -3,6 +3,7 @@ import numpy as np
 import os
 import glob
 import FlipCal # -- The FlipCal Processing Class
+from pathlib import Path
 import Vent_Analysis # The Ventilation Processing Class
 from helpers.vent_combine import tile_and_save_rgb_dicom_2x8 # -- the function for tiling all vents into 1 image
 from helpers.GX_to_DICOM import * # -- Functions for tiling Gas Exchange images into 1 collage
@@ -79,8 +80,18 @@ def PACS_runner(parent_dir,
 
     ## -- Analyze the FlipCal -- ##
     print(f"\033[33mDummy Dicom Paths Pre: {dicom_pre_template_path}, Post: {dicom_pos_template_path}.\033[37m")
-    FA = FlipCal.FlipCal(twix_path = calibration_twix_path)
-    FA.process()
+    from pathlib import Path
+    root = Path(parent_dir)  # change this
+    pkl_files = list(root.rglob("*FlipCal*/*.pkl"))
+    exists = len(pkl_files) > 0
+    print("Found?", exists)
+    if exists:
+        print('Found a flip can in parent folder so exporting that')
+        FA = FlipCal.FlipCal(pickle_path = pkl_files[0])
+    else:
+        print('Processing FlipCal from TWIX')
+        FA = FlipCal.FlipCal(twix_path = calibration_twix_path)
+        FA.process()
     FA.completeExport(parent_dir=parent_dir,dummy_dicom_path=os.path.join(xenon_pre_folder,os.listdir(xenon_pre_folder)[0]))
     # FA.dicomPrintout(dummy_dicom_path = dicom_pre_template_path,save_path = os.path.join(PACS_dir,'FlipCal'))
     print(f"\033[33mFlipCal processed successfully.\033[37m")
