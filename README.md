@@ -19,7 +19,7 @@ The [powerpoint](Vent_Analysis.pptx) gives an overview of how it all works. Esse
 
 ## Setup
 Using your favorite [git bash](https://git-scm.com/downloads) clone this github:  
-  `git clone https://github.com/thomenr/Vent_Analysis`  
+  `git clone https://github.com/thePIRL/XenonMRI`  
 Next you'll need to install the python modules listed in the [requirements.txt](requirements.txt) file:  
   `pip install -r requirements.txt`  
 Now, using your favorite [IDE](https://code.visualstudio.com/download), run the code (see the powerpoint for a few ways to do this - slide 3).
