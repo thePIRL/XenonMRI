@@ -1,9 +1,10 @@
 # XenonMRI
-This is code used by the University of Missouri PIRL (Pulmonary Imaging Research Lab) to analyze 129Xenon MRI data from MRI pulse sequences described in [Peter Niedbalski's paper](https://onlinelibrary.wiley.com/doi/10.1002/mrm.28985). We have 2 major scipts here: FlipCal.py and Vent_analysis.py (dissolved xenon script coming soon!). Each script essentially contains a single class structure which can perform all analysis operations with just a few methods. The class structures can be called directly (e.g., CalibrationInstance = FlipCal(ismrmrd_path='path/to/my/data')) or you can run the script by itself in which case a GUI will run from the main() function call. This is currently a research only tool - not approved for clinical use.
+This is code used by the University of Missouri PIRL (Pulmonary Imaging Research Lab) to analyze 129Xenon MRI data from MRI pulse sequences described in [Peter Niedbalski's paper](https://onlinelibrary.wiley.com/doi/10.1002/mrm.28985). We have 2 major scipts here: FlipCal.py and Vent_analysis.py. Each script essentially contains a single class structure which can perform all analysis operations with just a few methods. The class structures can be called directly (e.g., CalibrationInstance = FlipCal(ismrmrd_path='path/to/my/data')) or you can run the script by itself in which case a GUI will run from the main() function call. This is currently a research only tool - not approved for clinical use.
 
 ## Authors:
 - Robby Thomen [thomenr@health.missouri.edu]
 - Gabriela Garcia Delgado
+- Zach Money
 - Mia Ruppel
 - Isabella Parks
 - Afia Shammi
@@ -16,6 +17,9 @@ This class will analyze data acquired from the spectroscopic calibration sequenc
 There's 2 important pieces to this code. First, this contains the *Vent_Analysis* class which contains the processing pipeline for analyzing xenon ventilation data given the xenon image set (a DICOM file) and corresponding segmentation (a folder containing mask DICOMs). Second, the __main__ script employs the PySimpleGUI module to create a graphical user interface [GUI] so the data can be processed easily. Here's what the GUI looks like:
 ![alt text](GUI.png)
 The [powerpoint](Vent_Analysis.pptx) gives an overview of how it all works. Essentially, you just plug in paths to your data and click the buttons for methods you want to run. Once they've run, the image windows will update with your data and you can export the analyses. Easy peasy!
+
+## Overview of XenonAnalysis.py
+This script is somewhat of a bonus - all it does it compile already calculated/exported xenon imaging data into DICOMs which can be pushed to PACs for clinical reads. It may not be that useful to those outside of the PIRL group, but there may be some useful scripts others can use. The script imports lots of different types of data - DICOMs, numpy arrays, NIfTI arrays, PDFs - and converts them to DICOM format. Our PACs requires them to be non-enhanced to be uploaded, so no 3D dicoms allowed, only folders full of 2D dicoms. The script also requires a one of the scanners ventilation dicoms to clone the header; if this process isn't done properly you might get each image as its own DICOM instance, or data from the same session uploaded as different sessions, or slices not linkable while scrolling, etc. I think we've tackled most of these issues in the DICOM build and export, but idk. Anyways, feel free to pull whatever may be useful for your lab!
 
 ## Setup
 Using your favorite [git bash](https://git-scm.com/downloads) clone this github:  
