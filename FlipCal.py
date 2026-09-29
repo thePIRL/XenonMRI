@@ -233,6 +233,7 @@ class FlipCal:
             n_DP_FIDs = self.scanParameters['n_DP_FIDs']
             n_GAS_FIDs = self.scanParameters['n_GAS_FIDs']
             n_SVDs = self.singular_values_to_keep
+            n_ROs_to_omit = self.scanParameters['n_RO_pts_to_skip']
             n_skp = self.scanParameters['n_FIDs_to_steady_state']
         except:
             print('\033[33mn_noise_FIDs, n_DP_FIDs, n_GAS_FIDs, and/or n_RO_pts_to_skip are not in scanParameter dict. Defaulting to values 1, 499, 20, and 0 respectively...')
@@ -240,6 +241,7 @@ class FlipCal:
             n_DP_FIDs = 499
             n_GAS_FIDs = 20
             n_SVDs = 4
+            n_ROs_to_omit = 3
             n_skp = 100
         ## -- First we separate the the columns of the FID matrix into the 3 separate matrices for analysis
         self.noise = self.FID[:,0:n_noise_FIDs] # ---------------------------------------------------- noise FIDs
